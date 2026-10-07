@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Folder Locker Onboarding</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:blue;color:white;font-family:'Segoe UI',sans-serif}
+
+section{z-index:1;overflow:auto;width:99%;height:99.5%;border:2px solid #0ff;position:fixed;top:0.2%;left:1px;border-radius:20px;background:#000040;box-shadow:0 0 30px #0ff,0 0 30px #00f}
+   
+.screen{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:20px 18px 90px 18px;
+  background: #020a1e;
+  background-image:
+    /* CLEAR WAVE PATTERNS */
+    radial-gradient(ellipse at 50% 0%, rgba(80,150,255,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 0% 30%, rgba(0,100,255,0.3) 0%, transparent 50%),
+    linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Cpath d='M -20 60 Q 100 20 200 60 T 420 60' stroke='%2300ccff' stroke-width='1.5' fill='none' opacity='0.6'/%3E%3Cpath d='M -20 80 Q 100 40 200 80 T 420 80' stroke='%230088ff' stroke-width='1' fill='none' opacity='0.4'/%3E%3Cpath d='M 0 140 Q 150 90 300 140 T 500 140' stroke='%2300ffff' stroke-width='1.2' fill='none' opacity='0.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position: center top, left center, center, bottom 0px center;
+  background-size: 100% 50%, 80% 60%, 100% 100%, 100% 160px;
+}
+.screen.active{display:flex;animation:slideIn 0.5s ease}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOutLeft{from{transform:translateX(0);opacity:1}to{transform:translateX(-100%);opacity:0}}
+
+.logoBox{
+  width:110px;height:110px;
+  background: linear-gradient(135deg, #0a3fbb 0%, #00d4ff 100%);
+  border-radius:22px;
+ animation:logoFloat 2s ease-in-out infinite, sparkleGlow 1.2s ease-in-out infinite; display:flex;align-items:center;justify-content:center;
+  font-size:62px;
+  
+  box-shadow:0 0 25px #0ff, 0 0 50px #00f;
+  position:relative;
+}
+.logoBox::after{
+  ;position:absolute;bottom:8px;font-size:9px;font-weight:800;color:white;text-align:center;line-height:9px
+}
+h1{font-size:26px;font-weight:800;margin-top:20px;line-height:1.1}
+h1 span{color:#0ff;text-shadow:0 0 15px #0ff}
+.sub{color:#a0b0d0;font-size:13px;margin-top:8px;line-height:1.4;max-width:85%}
+
+.loader{
+  width:44px;height:44px;border:3px solid rgba(0,255,255,0.15);
+  border-top:3px solid #0ff;border-radius:50%;
+  animation:spin 0.9s linear infinite;margin-top:28px
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.iconsRow{display:flex;gap:10px;margin-top:18px}
+.iconsRow div{width:40px;height:40px;background:rgba(0,255,255,0.12);border:1px solid rgba(0,255,255,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+
+.btn-next{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(90deg,#0ff,#0a8cff);
+  border:none;display:flex;align-items:center;justify-content:center;
+  font-size:24px;color:#000;font-weight:bold;
+  box-shadow:0 0 20px #0ff;cursor:pointer;
+  position:absolute;right:20px;bottom:85px;
+  z-index:10;
+}
+.btn-prev{
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(0,255,255,0.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;color:white;cursor:pointer;
+  position:absolute;left:20px;bottom:85px;
+  z-index:999;
+}
+.btn-prev.hide{opacity:0;pointer-events:none}
+
+.dots{display:flex;gap:8px;position:absolute;bottom:150px;left:50%;transform:translateX(-50%); z-index: 10;}
+.dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25);transition:0.3s}
+.dots span.active{width:22px;background:#0ff;box-shadow:0 0 10px #0ff}
+
+.inputBox{
+  width:88%;height:48px;background:rgba(255,255,255,0.06);
+  border:1px solid rgba(0,255,255,0.25);border-radius:14px;
+  display:flex;align-items:center;gap:10px;padding:0 14px;margin-top:14px
+}
+.inputBox input{flex:1;background:transparent;border:none;outline:none;color:white;font-size:14px}
+
+.shield{
+  width:170px;height:170px;border-radius:28px;
+  background:radial-gradient(circle, rgba(0,180,255,0.5), rgba(0,40,140,0.4));
+  border:2px solid #0ff;display:flex;align-items:center;justify-content:center;
+  font-size:70px;box-shadow:0 0 40px #0ff, inset 0 0 30px rgba(0,200,255,0.3);
+  animation:pulse 1.8s infinite
+}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.progress{width:86%;height:16px;background:rgba(0,0,0,0.6);border:2px solid #0a8cff;border-radius:20px;overflow:hidden;margin-top:22px}
+.fill{height:100%;width:0%;background:linear-gradient(90deg,#00e5ff,#0080ff);box-shadow:0 0 15px #0ff;transition:width 0.1s}
+.credit{position:absolute;bottom:100px;text-align:center;width:100%;left:0}
+.credit b{color:#0ff}
+
+#stars{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999}
+.star{position:absolute;background:white;border-radius:50%;animation:twinkle 2s infinite}
+@keyframes twinkle{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+
+.onboard-container{position:relative;z-index:2;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.logo-wrap{position:relative;margin-bottom:20px}
+.logo{font-size:80px;filter:drop-shadow(0 0 15px #00d5ff) drop-shadow(0 0 30px #6a5cff);animation:logoFloat 2s ease-in-out infinite, sparkleGlow 1.2s ease-in-out infinite}
+.sparkle{position:absolute;top:-10px;right:-15px;font-size:28px;animation:sparklePop 1s ease-in-out infinite;text-shadow:0 0 10px gold,0 0 20px gold}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes sparkleGlow{0%,100%{filter:drop-shadow(0 0 15px #00d5ff) drop-shadow(0 0 30px #6a5cff) brightness(1)}50%{filter:drop-shadow(0 0 25px #00ffff) drop-shadow(0 0 50px #6a5cff) brightness(1.4)}}
+@keyframes sparklePop{0%,100%{transform:scale(1) rotate(0deg);opacity:0.7}50%{transform:scale(1.4) rotate(20deg);opacity:1}}
+h1{font-size:28px;text-shadow:0 0 10px #00d5ff,0 0 20px #6a5cff;margin-bottom:10px;text-align:center}
+
+.eye{font-size:22px;cursor:pointer;margin-left:0;filter:drop-shadow(0 0 6px #00d5ff);animation:eyeSparkle 1.5s infinite;user-select:none}
+@keyframes eyeSparkle{0%,100%{transform:scale(1);filter:drop-shadow(0 0 6px #00d5ff)}50%{transform:scale(1.2);filter:drop-shadow(0 0 12px #00ffff) drop-shadow(0 0 20px #6a5cff)}}
+
+.onboard-container{position:relative;z-index:2;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.logo-wrap{position:relative;margin-bottom:20px}
+.logo{font-size:80px;filter:drop-shadow(0 0 15px #00d5ff) drop-shadow(0 0 30px #6a5cff);animation:logoFloat 2s ease-in-out infinite, sparkleGlow 1.2s ease-in-out infinite}
+
+.btn-primary{padding:12px 36px;border-radius:30px;background:linear-gradient(90deg,#00d5ff,#6a5cff);border:none;color:white;font-weight:bold;font-size:16px;cursor:pointer;box-shadow:0 0 20px rgba(0,213,255,0.5)}
+
+/* EYE INSIDE RIGHT SIDE - FIXED */
+.inputBox{width:88%;height:48px;background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,255,0.3);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 12px;margin-top:12px;position:relative}
+.inputBox input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:14px;padding-right:38px}
+.inputBox .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:22px;cursor:pointer;filter:drop-shadow(0 0 6px #00d5ff);animation:eyeSparkle 1.5s infinite;width:28px;height:28px;display:flex;align-items:center;justify-content:center;z-index:5}
+@keyframes eyeSparkle{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.2);filter:drop-shadow(0 0 12px #00ffff) drop-shadow(0 0 20px #6a5cff)}}
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;padding:20px}
+.popup-overlay.show{display:flex}
+.popup-box{width:320px;background:linear-gradient(135deg,#000040,#020a1e);border:2px solid #0ff;border-radius:18px;padding:20px;box-shadow:0 0 30px #0ff;text-align:center}
+.popup-icon{font-size:42px;margin-bottom:10px}.popup-title{font-size:18px;font-weight:800;color:#0ff;margin-bottom:8px}.popup-msg{font-size:13px;color:#c0d0f0;margin-bottom:16px}.popup-btn{width:100%;height:44px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:12px;font-weight:800;color:#000;cursor:pointer}
+.Volume {position:absolute;top:5%;left:3%;width:25%;z-index:1000;pointer-events:auto;accent-color:#0ff}
+.volume{position:absolute;top:5%;left:3%;width:25%;z-index:1000;pointer-events:auto;accent-color:#0ff}
+</style>
+</head>
+<body>
+  
+  <div id="stars"></div>
+ <input type="range" class="volume">
+<section>
+
+<!-- 1 - Folder Locker Loading -->
+<div class="screen active" id="s1">
+  <div class="logoBox" style="font-size:48px"><img src="icon.png" alt="Folder Locker"   style="width: 100px; height: 100px; border-radius: 20px;"><div class="sparkle">✨</div></div>
+  <h1>All Your Trust</h1>
+  <div class="sub">Your Files • Your Privacy • Our Priority</div>
+  <div class="loader"></div>
+  <div class="sub" style="margin-top:10px">Loading...</div>
+  <div class="credit" style="bottom:18px"><div style="font-size:11px;color:#8aa0c8">Designed by <b>AHMED K SanShania</b><br><small style="color:#5a6a8a;font-style:italic">create the feeling</small></div></div>
+  <div class="btn-prev hide" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="go(1)">›</div>
+  <div class="dots"><span class="active"></span><span></span><span></span><span></span><span></span><span></span></div>
+</div>
+
+<!-- 2 - Welcome -->
+<div class="screen" id="s2">
+  <div class="logoBox" style="font-size:48px">🔐<div class="sparkle">✨</div></div>
+  <h1>Welcome to<br><span>Folder Locker</span></h1>
+  <div class="sub">Keep your important files,<br>photos, videos and documents<br>safe and private.</div>
+  <div class="iconsRow"><div>🖼️</div><div>📄</div><div>🎬</div><div>🎵</div></div>
+  <div class="btn-prev" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="go(1)">›</div>
+  <div class="dots"><span></span><span class="active"></span><span></span><span></span><span></span><span></span></div>
+</div>
+
+<!-- 3 - Designed By -->
+<div class="screen" id="s3">
+  <div class="logoBox" style="font-size:48px">🛡️<div class="sparkle">✨</div></div>
+  <div style="margin-top:20px;color:#8aa0c8;font-size:13px">Designed by</div>
+  <h1 style="margin-top:4px"><span>AHMED K SanShania</span></h1>
+  <div class="sub">create the feeling</div>
+  <div class="btn-prev" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="go(1)">›</div>
+  <div class="dots"><span></span><span></span><span class="active"></span><span></span><span></span><span></span></div>
+</div>
+
+<!-- 4 - Create Password -->
+
+<div class="screen" id="s4">
+  <div class="logoBox" style="width:70px;height:70px;font-size:26px">🔒<div class="sparkle">✨</div></div>
+  
+  <h1 style="font-size:20px;margin-top:14px">Folder Locker</h1>
+  <div style="margin-top:14px;color:#0ff;font-weight:700;font-size:15px">Create your vault password</div>
+  <div class="sub">This password protects your<br>private files.</div>
+  
+ 
+  <div class="inputBox"><span>🔒</span><input type="password" id="p1" placeholder="Create password"><span class="eye" onclick="toggleEye('p1',this)">👁️</span></div>
+  <div class="inputBox"><span>🔒</span><input type="password" id="p2" placeholder="Confirm password"><span class="eye" onclick="toggleEye('p2',this)">👁️</span></div>
+  <button style="width:88%;height:48px;margin-top:18px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:14px;font-weight:800;cursor:pointer;box-shadow:0 0 20px #0ff" onclick="createVault()">Create Secure Vault</button>
+  <div class="btn-prev" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="go(1)">›</div>
+  <div class="dots"><span></span><span></span><span></span><span class="active"></span><span></span><span></span></div>
+</div>
+
+<!-- 5 - Almost There -->
+<div class="screen" id="s5">
+  <div class="shield">🛡️<div style="position:absolute;font-size:46px">🔒</div></div>
+  <h1 style="margin-top:22px">Almost There...</h1>
+  <div class="sub" style="color:#7ec8ff">Your security is our top priority.</div>
+  <div class="progress"><div class="fill" id="fill"></div></div>
+  <div class="sub" id="perc" style="margin-top:8px;color:#0ff;font-size:12px">0% complete • Securing your account...</div>
+  <div class="credit"><div style="font-size:11px">Designed by <b>AHMED K SanShania</b><br><small style="color:#5a6a8a;font-style:italic">create the feeling</small></div></div>
+  <div class="btn-prev" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="go(1)">›</div>
+  <div class="dots"><span></span><span></span><span></span><span></span><span class="active"></span><span></span></div>
+</div>
+
+<!-- 6 - Login with Password or Fingerprint -->
+<div class="screen" id="s6">
+  <div class="logoBox" style="width:80px;height:80px">🔒<div class="sparkle">✨</div></div>
+  <h1 style="margin-top:16px;font-size:22px">Welcome Back</h1>
+  <div class="sub">Login with password or fingerprint</div>
+  <div class="inputBox"><span>🔒</span><input type="password" id="loginP" placeholder="Enter vault password"></div>
+  <button style="width:88%;height:48px;margin-top:16px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:14px;font-weight:800;cursor:pointer" onclick="login()">Unlock Vault</button>
+  <div onclick="fingerPrint()" style="margin-top:18px;width:66px;height:66px;border-radius:50%;background:rgba(0,255,255,0.1);border:2px solid #0ff;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;box-shadow:0 0 20px #0ff">👆</div>
+  <div class="sub" style="color:#0ff;margin-top:6px">Tap for fingerprint</div>
+  <div class="btn-prev" onclick="go(-1)">‹</div>
+  <div class="btn-next" onclick="login()">›</div>
+  <div class="dots"><span></span><span></span><span></span><span class="active"></span></div>
+</div>
+
+</section>
+<div class="popup-overlay" id="popup"><div class="popup-box"><div id="pIcon" class="popup-icon">🔒</div><div id="pTitle" class="popup-title">Security</div><div id="pMsg" class="popup-msg">Message</div><div style="display:flex;gap:8px"><button class="popup-btn" id="pCancel" style="display:none;background:rgba(255,255,255,.1);color:#aaa">Cancel</button><button class="popup-btn" id="pOk">OK</button></div></div></div>
+
+ <audio id="bg-music" autoplay loop>
+    <source src="Daddy.mp3" type="audio/mpeg">
+</audio>
+
+ 
+<script>
+  
+  /* BACKGROUND MUSIC FORCE AUTOPLAY */
+const music = document.getElementById("bg-music");
+
+function playMusic() {
+  music.play().catch(() => {});
+}
+
+/* Try autoplay on load */
+window.addEventListener("load", () => {
+  music.volume = 0.6;
+  playMusic();
+});
+
+/* Ensure it keeps playing even after interaction */
+document.addEventListener("click", playMusic);
+document.addEventListener("scroll", playMusic);
+document.addEventListener("touchstart", playMusic);
+
+</script>
+
+<script>
+let firstInstall=!(window.AndroidVault&&AndroidVault.hasPassword&&AndroidVault.hasPassword());
+let cur=1,total=6;
+function showPopup(title,msg,icon='🔒',confirm=false){return new Promise(resolve=>{let p=document.getElementById('popup');document.getElementById('pIcon').textContent=icon;document.getElementById('pTitle').textContent=title;document.getElementById('pMsg').textContent=msg;let c=document.getElementById('pCancel');c.style.display=confirm?'block':'none';p.classList.add('show');window.__animResolve=resolve;})}
+function closeAnimPopup(v){document.getElementById('popup').classList.remove('show');if(window.__animResolve){let r=window.__animResolve;window.__animResolve=null;r(v)}}
+document.getElementById('pOk').onclick=()=>closeAnimPopup(true);document.getElementById('pCancel').onclick=()=>closeAnimPopup(false);
+function targetStep(dir){let n=cur+dir;if(n<1)n=1;if(n>total)n=total;if(!firstInstall&&n===4)n=dir>0?5:3;return n}
+
+function go(dir){
+  let next=targetStep(dir);
+  if(next===cur)return;
+
+  document.getElementById('s'+cur).classList.remove('active');
+  document.getElementById('s'+next).classList.add('active');
+
+  cur=next;
+
+  if(cur===5)startProgress();
+
+  updateDots();
+}
+async function createVault(){let a=document.getElementById('p1').value,b=document.getElementById('p2').value;if(a.length<4){showPopup('Long password required','Create a password and confirm it to continue.','🔐');return}if(a!==b){showPopup('Password mismatch','Create a password and confirm it to continue.','⚠️');return}let ok=window.AndroidVault&&AndroidVault.setPassword?AndroidVault.setPassword(a):false;if(!ok){showPopup('Security error','The password could not be saved.','❌');return}firstInstall=false;await showPopup('Password created','Your registered password is ready. Fingerprint remains OFF until you enable it in Settings.','✅');document.getElementById('s4').classList.remove('active');document.getElementById('s5').classList.add('active');cur=5;startProgress();updateDots()}
+function startProgress(){let fill=document.getElementById('fill'),perc=document.getElementById('perc'),w=0;fill.style.width='0%';let iv=setInterval(()=>{w+=2;fill.style.width=w+'%';perc.textContent=w+'% complete • Securing your account...';if(w>=100){clearInterval(iv);perc.textContent='100% • Vault Secured!';setTimeout(()=>{document.getElementById('s5').classList.remove('active');document.getElementById('s6').classList.add('active');cur=6;updateDots()},450)}},30)}
+async function login(){if(!window.AndroidVault||!AndroidVault.hasPassword()){await showPopup('Vault not created','Create your secure vault password first.','⚠️');firstInstall=true;cur=4;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('s4').classList.add('active');return}let entered=document.getElementById('loginP').value;if(!entered){await showPopup('Password required','Enter your registered password to continue.','🔒');return}if(AndroidVault.verifyPassword(entered)){AndroidVault.unlockSession();await showPopup('Login successful','Opening Folder Locker home.','✅');location.href='index.html'}else await showPopup('Wrong password','The registered password is incorrect.','❌')}
+function fingerPrint(){if(!window.AndroidVault||!AndroidVault.isFingerprintEnabled||!AndroidVault.isFingerprintEnabled()){showPopup('Fingerprint was disabled','Fingerprint was disabled use registered password or our phone unlock method.','⚠️');return}if(AndroidVault.authenticateBiometric)AndroidVault.authenticateBiometric()}
+function onNativeBiometric(ok){if(ok){AndroidVault.unlockSession();showPopup('Fingerprint accepted','Opening Folder Locker home.','✅').then(()=>location.href='index.html')}else showPopup('Fingerprint failed','Use your registered password or your phone unlock method.','❌')}
+function onNativeSecurityMessage(code){if(code==='fingerprintDisabled')showPopup('Fingerprint was disabled','Fingerprint was disabled use registered password or our phone unlock method.','⚠️')}
+let startX=0;const section=document.querySelector('section');section.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});section.addEventListener('touchend',e=>{let dx=e.changedTouches[0].clientX-startX;if(dx<-50)go(1);if(dx>50)go(-1)},{passive:true});
+function createStars(){const c=document.getElementById('stars');for(let i=0;i<45;i++){const s=document.createElement('div');s.className='star';const size=Math.random()*2+1;s.style.width=size+'px';s.style.height=size+'px';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.animationDelay=(Math.random()*2)+'s';s.style.animationDuration=(1+Math.random()*2)+'s';c.appendChild(s)}}createStars();
+function toggleEye(id,el){const inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';el.textContent='🙈'}else{inp.type='password';el.textContent='👁️'}}
+const volume=document.querySelector('.volume');if(volume){volume.value=60;volume.addEventListener('input',()=>{const m=document.getElementById('bg-music');m.volume=Number(volume.value)/100})}
+if(window.AndroidVault&&AndroidVault.isSessionUnlocked&&AndroidVault.isSessionUnlocked())location.replace('index.html');
+document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('s1').classList.add('active');cur=1;updateDots();
+</script>
+</body>
+</html>

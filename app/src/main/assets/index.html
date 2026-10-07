@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Folder Locker - Home</title>
+<style>
+    body{
+      background: blue;
+      color: White;
+      margin:0;
+      font-family:'Segoe UI',sans-serif;
+      overflow:hidden;
+    }
+    section{
+      z-index:1;
+      overflow:auto;
+      width:98%;
+      height:99%;
+      border:2px solid #0ff;
+      position:fixed;
+      top:0; left:1px;
+      border-radius:20px;
+      background:#020a1e;
+      box-shadow:0 0 30px #0ff, 0 0 30px #00f;
+      display:flex;
+      flex-direction:column;
+      /* BACKGROUND PATTERNS CLEARLY VISIBLE */
+      background-image: 
+        radial-gradient(ellipse at 10% 20%, rgba(0,140,255,0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 60%, rgba(0,255,255,0.15) 0%, transparent 40%),
+        url("data:image/svg+xml,%3Csvg width='600' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 100 Q150 50 300 100 T600 100' stroke='%230ff' stroke-width='0.5' fill='none' opacity='0.15'/%3E%3Cpath d='M0 200 Q150 150 300 200 T600 200' stroke='%230af' stroke-width='0.5' fill='none' opacity='0.1'/%3E%3Cpath d='M0 300 Q150 250 300 300 T600 300' stroke='%230ff' stroke-width='0.5' fill='none' opacity='0.12'/%3E%3C/svg%3E");
+      background-size:100% 100%, 100% 100%, 600px 600px;
+    }
+    .top-bar{
+      display:flex;align-items:center;gap:10px;
+      padding:14px 14px 8px 14px;
+    }
+    .app-logo{
+      width:42px;height:42px;
+      background:linear-gradient(135deg,#1a6bff,#0a3fbb);
+      border-radius:12px;display:flex;align-items:center;justify-content:center;
+      font-size:22px;border:1px solid #0ff;box-shadow:0 0 15px #0af;
+    }
+    .top-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+    .premium{}
+    
+    main{flex:1;overflow-y:auto;padding:6px 12px 90px 12px}
+
+    .welcome-card, .vault-card, .bottom-card{
+      border:1px solid rgba(0,255,255,0.3);
+      border-radius:18px;
+      background:linear-gradient(135deg, rgba(5,20,60,0.95) 0%, rgba(2,10,30,0.9) 100%);
+      position:relative;
+      overflow:hidden;
+      box-shadow:0 0 20px rgba(0,100,255,0.3) inset, 0 0 15px rgba(0,255,255,0.1);
+    }
+    /* CLEAR WAVE PATTERN INSIDE CARDS */
+    .welcome-card::before, .vault-card::before{
+      content:'';
+      position:absolute;inset:0;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(0,200,255,0.15) 50%, transparent 100%),
+        url("data:image/svg+xml,%3Csvg width='400' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 80 Q100 20 200 80 T400 60' stroke='%230ff' stroke-width='1' fill='none' opacity='0.3'/%3E%3C/svg%3E");
+      pointer-events:none;
+    }
+
+    .welcome-card{
+      padding:16px;
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .welcome-card .left{position:relative;z-index:2}
+    .welcome-card h3{margin:0;font-size:15px;color:#d0dcff}
+    .welcome-card h1{margin:2px 0 6px 0;font-size:26px;color:#0ff;text-shadow:0 0 15px #0ff}
+    .welcome-card p{margin:0;font-size:11px;color:#8aa0c8;line-height:1.3}
+    .profile{
+      position:relative;z-index:2;
+      width:75px;height:75px;border-radius:50%;
+      border:2px solid #0ff;box-shadow:0 0 15px #0ff;
+      overflow:hidden;background:#000;
+    }
+    .profile img{width:100%;height:100%;object-fit:cover;}
+    .profile-tag{
+     margin-top:16px;position: absolute;bottom:-26px;right:-4px;
+      background:rgba(0,0,0,0.5);border:1px solid #0ff;
+      font-size:9px;padding:2px 6px;border-radius:10px;display:flex;align-items:center;gap:3px;z-index:3;
+    }
+
+    .vault-card{
+      padding:6px;display:flex;align-items:center;gap:12px;margin-bottom:4px;
+    }
+    .shield{
+      width:48px;height:52px;background:linear-gradient(180deg,#0af,#06f);
+      border-radius:12px 12px 20px 20px;clip-path:polygon(50% 0, 100% 15%, 100% 70%, 50% 100%, 0 70%, 0 15%);
+      display:flex;align-items:center;justify-content:center;font-size:22px;
+      box-shadow:0 0 20px #0ff;position:relative;z-index:2;
+    }
+    .vault-text{flex:1;position:relative;z-index:2}
+    .vault-text b{font-size:15px}
+    .vault-text span{font-size:11px;color:#8aa0c8;display:block;margin-top:2px}
+    .bio-btn{
+      position:relative;z-index:2;
+      border:1px solid #0ff;border-radius:20px;padding:6px 10px;
+      font-size:11px;display:flex;align-items:center;gap:6px;background:rgba(0,255,255,0.1);
+    }
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+    .folder{
+      border:1px solid rgba(0,255,255,0.25);
+      border-radius:14px;
+      padding:12px 10px;
+      background:linear-gradient(135deg, rgba(10,20,50,0.9), rgba(5,15,40,0.9));
+      position:relative;overflow:hidden;
+      cursor:pointer;
+    }
+    .folder::before{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(circle at 80% 20%, rgba(0,255,255,0.12), transparent 60%);
+    }
+    .folder-icon{
+      width:36px;height:36px;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;
+      border:1px solid rgba(0,255,255,0.3);box-shadow:0 0 10px currentColor;
+    }
+    .folder b{font-size:12px;display:block;position:relative}
+    .folder span{font-size:10px;color:#8aa0c8;position:relative}
+    .folder .arrow{position:absolute;right:8px;bottom:12px;font-size:14px;color:#5a6a8a}
+
+    .bottom-card{
+      padding:12px 14px;display:flex;align-items:center;gap:10px;
+    }
+    .bottom-card .star{color:#0ff;font-size:20px}
+    .bottom-card b{font-size:12px;color:#0ff}
+    .bottom-card p{font-size:10px;color:#8aa0c8;margin:2px 0 0 0}
+    .go-btn{
+      margin-left:auto;width:36px;height:36px;border-radius:50%;
+      background:linear-gradient(135deg,#0af,#0ff);display:flex;align-items:center;justify-content:center;
+      color:#000;font-weight:bold;box-shadow:0 0 12px #0ff;
+    }
+
+    footer{
+      border-top:1px solid rgba(0,255,255,0.25);
+      text-align:center;position:fixed;bottom:0.6%;
+      border-radius:20px;padding:8px 0;width:92.5%;height:52px;background:#020a1e;
+      display:flex;justify-content:space-around;align-items:center;z-index:20;
+    }
+    footer a{text-decoration:none;color:#5a6a8a;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px}
+    footer a.active{color:#0ff;text-shadow:0 0 10px #0ff}
+    footer a span{font-size:18px}
+    
+    a{text-decoration:none; color: white;}
+    
+    .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;padding:20px}
+.popup-overlay.show{display:flex}
+.popup-box{width:320px;background:linear-gradient(135deg,#000040,#020a1e);border:2px solid #0ff;border-radius:18px;padding:20px;box-shadow:0 0 30px #0ff;text-align:center}
+.popup-title{font-size:18px;font-weight:800;color:#0ff;margin-bottom:8px}.popup-msg{font-size:13px;color:#c0d0f0;margin-bottom:16px}.popup-btn{width:100%;height:44px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:12px;font-weight:800;color:#000;cursor:pointer}
+
+
+
+.vibe{
+  width:60%; position: absolute; top:20%; Left:10%;
+  height: 150px;
+ border-radius: 20px; background:rgba(0,155,255,0.5); color: #fff;
+  z-index: 99;
+  text-shadow:0 2px 0 #f0f; text-align: center;
+  padding: 10px;
+     box-shadow: 0 0 20px
+     rgba(255,0,255,0.9),
+     0 0 20px;
+    opacity: 0;
+    rgba(255,0,255,0.9),0 0 20px
+     rgba(0,0,0,0.9);
+     animation: move 2s ease-in,plus 2s infinite ease-in-out,disappear 11s ease-out;
+     animation-delay: 4s;
+     
+    }
+    
+  @keyframes appear {
+    from{ transform: scale(0.1); opacity: 0;}
+  }
+  
+  @keyframes move {
+    
+    from{ transform: translateY(250px); opacity:0;}
+    
+  }
+  
+  
+  @keyframes plus {
+    50%{
+      transform: scale(0.95); box-shadow:0 0 30px black;}
+  }
+  @keyframes disappear{
+    0%{opacity:1;}
+    20%{opacity:1;} 
+    40%{opacity:1;}
+    60%{opacity:1;}
+    80%{opacity:0.8;}
+    99%{opacity:0.4;}
+    100%{opacity:.2;}
+    0%{opacity:0;}
+    
+  }  
+  
+  
+
+#postBtn{
+color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px solid rgba(0,255,255,0.3);padding:4px 8px;border-radius:20px;background:rgba(0,255,255,0.08);
+}
+
+.custom-alert{
+    position:fixed;
+    top:30px;
+    left:-350px;
+    padding:15px 30px;
+    background:linear-gradient(135deg,#ff4d4d,#ff9900);
+    color:#fff;
+    font-size:18px;
+    font-weight:bold;
+    border-radius:10px;
+    box-shadow:0 5px 60px rgba(33,255,33,0.9);
+    z-index:9999;
+    opacity:1;
+}
+
+.custom-alert.show{
+    animation:
+        slideIn 0.8s forwards,
+        fadeOut 4s forwards 5s;
+}
+
+@keyframes slideIn{
+    from{
+        left:-350px;
+    }
+    to{
+        left:50%;
+        transform:translateX(-50%);
+    }
+}
+
+@keyframes fadeOut{
+    from{
+        opacity:1;
+    }
+    to{
+        opacity:0;
+    }
+}
+#game::before{
+    content:"";
+    position:absolute;
+
+    top:0;
+    left:-120%;
+
+    width:60%;
+    height:100%;
+
+    background:linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.5),
+        transparent
+    );
+
+    transform:skewX(-135deg);
+
+    animation:shimmer 2s infinite;
+}
+
+/* Animation */
+@keyframes shimmer{
+    0%{
+        left:-120%;
+    }
+
+    100%{
+        left:150%;
+    }
+</style>
+</head>
+<body>
+<section>
+  <div id="customAlert" class="custom-alert">
+    🚀 Coming Soon
+</div>
+  <div class="vibe"><h3>Welcome to Home. Feel the vibe and enjoy the adventure 🌐</h3></div>
+  <div class="top-bar">
+    <div class="app-logo"><img src="icon.png" alt="Folder Locker"
+    width="60" height="60"
+    style="border-radius: 20px;"></div>
+    <div><div style="font-weight:700;font-size:15px">Folder <span style="color:#0ff">Locker</span></div><div style="font-size:10px;color:#8aa0c8">Your Private Vault</div></div>
+    <div class="top-right">
+      <button onclick="showAlert()"id="postBtn">
+      <div class="premium">👑 Premium</div></button>
+      <div style="font-size:20px;cursor:pointer" onclick="location.href='settings.html'">⚙️</div>
+    </div>
+  </div>
+
+  <main>
+    <div class="welcome-card">
+      <div class="left">
+        <h3>Welcome Back,</h3>
+        <h1>Ahmed K</h1>
+        <p>Your files, your privacy,<br>our priority.</p>
+      </div>
+      <div style="position:relative">
+        <div class="profile"><img src="birood.jpg" alt="profile"></div>
+        <div class="profile-tag" onclick="openWhatsApp()">💬 WhatsApp for more</div>
+      </div>
+    </div>
+
+    <div class="vault-card">
+      <div class="shield">🔒</div>
+      <div class="vault-text"><b>Vault Secured</b><span>Your files are safe and private</span></div>
+      <div class="bio-btn" id="bioStatus">🌀 Biometric OFF <span>›</span></div>
+    </div>
+
+    <div class="grid">
+      <div class="folder" onclick="location.href='images.html'"><div class="folder-icon" style="background:rgba(0,120,255,0.3);color:#0af">🖼️</div><b>Photos</b><span>0 items</span><div class="arrow">›</div></div>
+      <div class="folder" onclick="location.href='videos.html'"><div class="folder-icon" style="background:rgba(180,0,255,0.25);color:#b44dff">▶️</div><b>Videos</b><span>0 items</span><div class="arrow">›</div></div>
+      <div class="folder" onclick="location.href='documents.html'"><div class="folder-icon" style="background:rgba(0,255,100,0.2);color:#0f8">📄</div><b>Documents</b><span>0 items</span><div class="arrow">›</div></div>
+      <div class="folder" onclick="location.href='music.html'"><div class="folder-icon" style="background:rgba(255,160,0,0.25);color:#ffa500">🎵</div><b>Music</b><span>0 items</span><div class="arrow">›</div></div>
+      <div class="folder" onclick="location.href='files.html'"><div class="folder-icon" style="background:rgba(0,200,255,0.25);color:#0df">📁</div><b>Other Files</b><span>0 items</span><div class="arrow">›</div></div>
+      <div 
+      id="game"
+      class="folder" style="border-color:#0ff;box-shadow:0 0 15px rgba(0,255,255,0.9)" onclick="location.href='games.html'">
+        <div class="folder-icon" style="background:rgba(180,80,255,0.3);color:#c87cff">🎮</div><b>Games</b><span>2 item</span>                  <div class="arrow">›</div></div>
+    </div>
+
+    <div class="bottom-card" onclick="location.href='files.html'">
+      <div class="star">✨</div>
+      <div><b>Keep Your Memories Safe</b><p>Photos, videos, documents and more...</p></div>
+      <div class="go-btn">→</div>
+    </div>
+  </main>
+
+  <footer>
+    <a class="active" href="index.html"><span>🏠</span>Home</a>
+    <a href="files.html"><span>📁</span>Files</a>
+  <a class="game-card" href="games.html"><span>🎮</span>Games</a>
+    <a href="settings.html"><span>⚙️</span>Settings</a>
+  </footer>
+</section>
+</section>
+<div class="popup-overlay" id="popup"><div class="popup-box"><div style="font-size:42px">📡</div><div class="popup-title" id="pTitle">No Internet</div><div class="popup-msg" id="pMsg">No internet connection. Check your internet and try again</div><button class="popup-btn" onclick="closePopup()">OK</button></div></div>
+<script src="vault.js"></script><script>
+    /*Auto close alert box*/
+function showAlert(){
+    const alertBox = document.getElementById("customAlert");
+
+    alertBox.classList.remove("show");
+    void alertBox.offsetWidth; // restart animation
+    alertBox.classList.add("show");
+
+    setTimeout(()=>{
+        alertBox.classList.remove("show");
+        alertBox.style.left = "-350px";
+        alertBox.style.opacity = "1";
+    },9000); // 5s visible + 4s fade
+}
+
+
+if(!requireUnlock())throw new Error('locked');
+function updateCounts(){document.querySelectorAll('.folder').forEach(el=>{let h=el.querySelector('b');let span=el.querySelector('span');if(!h||!span)return;let map={Photos:'images',Videos:'videos',Documents:'documents',Music:'music'};let c=map[h.textContent];if(c)span.textContent=listVault(c).length+' items';});}
+updateCounts();
+function updateBioStatus(){let on=window.AndroidVault&&AndroidVault.isFingerprintEnabled&&AndroidVault.isFingerprintEnabled();let el=document.getElementById('bioStatus');if(el)el.innerHTML='🌀 Biometric '+(on?'ON':'OFF')+' <span>›</span>'}
+window.addEventListener('pageshow',updateBioStatus);
+window.addEventListener('focus',updateBioStatus);
+updateBioStatus();
+
+function showPopup(t,m){document.getElementById('pTitle').textContent=t;document.getElementById('pMsg').textContent=m;document.getElementById('popup').classList.add('show')}
+function closePopup(){document.getElementById('popup').classList.remove('show')}
+function openWhatsApp(){
+ if(window.AndroidVault&&AndroidVault.openWhatsApp){AndroidVault.openWhatsApp();return;}
+ if(!navigator.onLine){showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');return;}
+ window.open('https://wa.me/256709387311?text=Hello%2C%20can%20you%20create%20for%20me%20a%20website.%20Please','_blank');
+}
+function onWhatsAppResult(ok){if(!ok)showPopup('WhatsApp Unavailable','WhatsApp could not be opened on this phone. Please install WhatsApp and try again.');}
+</script>
+
+</body>
+</html>

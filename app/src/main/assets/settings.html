@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings - Fixed Eye Inside</title>
+<style>
+body{background:blue;color:White;margin:0;font-family:'Segoe UI',sans-serif}
+section{z-index:1;overflow:auto;width:98%;height:99%;border:2px solid #0ff;position:fixed;top:0;left:1px;border-radius:20px;background:#000040;box-shadow:0 0 30px #0ff,0 0 30px #00f;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:18px 16px 10px 16px}
+header.back{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+main{flex:1;overflow-y:auto;padding:5px 14px 100px 14px}
+.section-title{font-size:16px;font-weight:600;margin:18px 0 8px 4px;color:#e0e8ff}
+.card{background:linear-gradient(180deg,rgba(10,30,80,0.9),rgba(5,15,50,0.9));border:1px solid rgba(0,255,255,0.25);border-radius:16px;overflow:hidden;margin-bottom:6px}
+.row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid rgba(0,255,255,0.12);cursor:pointer}.row:last-child{border:none}
+.icon{width:34px;height:34px;background:rgba(0,100,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(0,255,255,0.2)}
+.text{flex:1}.text b{display:block;font-size:14.5px}.text span{font-size:12px;color:#8aa0c8}
+.switch{width:44px;height:26px;background:#2a3a5a;border-radius:20px;position:relative;margin-left:auto;border:1px solid rgba(0,255,255,0.2);cursor:pointer}.switch.on{background:linear-gradient(90deg,#0aa0ff,#0ff);box-shadow:0 0 12px #0ff}.switch::after{content:'';width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:0.3s}.switch.on::after{left:21px}
+footer{border-top:1px solid rgba(0,255,255,0.25);position:fixed;bottom:0.6%;border-radius:20px;padding:10px;width:92.5%;background:#000040;display:flex;justify-content:space-around;z-index:10}footer a{color:white;text-decoration:none;font-size:12px}footer a.active{color:#0ff}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;justify-content:center;align-items:center;padding:20px}.overlay.show{display:flex}
+.modal{
+width:50%;
+background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:16px;box-shadow:0 0 30px #0ff}
+.inputBox{width:90%;height:48px;background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,255,0.3);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 12px;margin-top:12px;position:relative}
+.inputBox input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:14px;padding-right:38px}
+.inputBox.eye{position: relative; left:12%;top:50%;transform:translateY(-50%);font-size:22px;cursor:pointer;filter:drop-shadow(0 0 6px #00d5ff);animation:eyeSparkle 1.5s infinite;width:8px;height:8px;display:flex;align-items:center;justify-content:center}
+@keyframes eyeSparkle{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.2)}}
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:none;justify-content:center;align-items:center;padding:20px}.popup-overlay.show{display:flex}
+.popup-box{width:320px;background:linear-gradient(135deg,#000040,#020a1e);border:2px solid #0ff;border-radius:18px;padding:20px;text-align:center}.popup-btn{width:100%;height:44px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:12px;font-weight:800;color:#000;cursor:pointer;margin-top:6px}
+.text{flex:1}
+   .text b{display:block;font-size:14.5px;font-weight:600}
+   .text span{display:block;font-size:12px;color:#8aa0c8;margin-top:2px}
+   .arrow{font-size:18px;color:#8aa0c8}
+   .right-val{color:#8aa0c8;font-size:14px;margin-left:auto}
+   .switch{
+      width:44px;height:26px;
+      background:#2a3a5a;
+      border-radius:20px;
+      position:relative;
+      cursor:pointer;
+      transition:0.3s;
+      margin-left:auto;
+      border:1px solid rgba(0,255,255,0.2);
+    }
+   .switch.on{
+      background: linear-gradient(90deg, #0aa0ff, #0ff);
+      box-shadow:0 0 12px #0ff;
+    }
+   .switch::after{
+      content:'';
+      width:20px;height:20px;
+      background:white;
+      border-radius:50%;
+      position:absolute;
+      top:2px;left:2px;
+      transition:0.3s;
+      box-shadow:0 2px 4px rgba(0,0,0,0.3);
+    }
+   .switch.on::after{left:21px}
+   .credit{
+      text-align:center;
+      margin-top:28px;
+      padding-bottom:10px;
+      line-height:1.4;
+    }
+   .credit.name{font-size:12px;color:#8aa0c8}
+   .credit.name b{color:#0ff;font-weight:700}
+   .credit.line{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:2px}
+   .credit.line::before,.credit.line::after{content:'';width:35px;height:1px;background:linear-gradient(90deg, transparent, #0ff)}
+   .credit.line::after{background:linear-gradient(90deg, #0ff, transparent);}
+   .credit small{font-size:11px;color:#5a6a8a}
+    footer{
+      border-top: 1px solid rgba(0,255,255,0.25);
+      text-align: center;
+      position: fixed;
+      bottom: 0.6%;
+      border-radius: 20px;
+      padding: 10px;
+      width: 92.5%;
+      height: 5%;
+      background: #000040;
+      display:flex;justify-content:space-around;align-items:center;
+      z-index:10;
+    }
+    footer a{text-decoration:none;color:white;font-weight:bold;padding:10px;display:flex;flex-direction:column;align-items:center;font-size:12px}
+    footer a.active{color:#0ff;text-shadow:0 0 10px #0ff}
+
+/* === ADDED ONLY - AutoLock WhatsApp Style === */
+.autoLock-sheet{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:none;align-items:flex-end;justify-content:center}
+.autoLock-sheet.show{display:flex}
+.autoLock-box{width:100%;max-width:420px;background:linear-gradient(180deg,#0a1a4a,#000030);border:1px solid #0ff;border-bottom:none;border-radius:22px 22px 0 0;padding:8px 0 20px;box-shadow:0 -10px 40px rgba(0,255,255,.3);animation:slideUp.3s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-title{padding:18px 20px 10px;font-size:17px;font-weight:700;color:#e0e8ff;display:flex;justify-content:space-between;align-items:center}
+.sheet-opt{padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid rgba(0,255,255,.08)}
+.sheet-opt:active{background:rgba(0,255,255,.08)}
+.sheet-opt b{font-size:14.5px;display:block;color:#e0e8ff}.sheet-opt span{font-size:11.5px;color:#8aa0c8}
+.sheet-opt.check{margin-left:auto;width:22px;height:22px;border-radius:50%;border:2px solid #0ff;display:flex;align-items:center;justify-content:center;font-size:14px;color:#000}
+.sheet-opt.active.check{background:#0ff;box-shadow:0 0 10px #0ff}.sheet-opt.active{background:rgba(0,255,255,.08)}
+  .credit .name{
+      font-size:12px;
+      color:#8aa0c8;
+    }
+    .credit .name b{color:#0ff;font-weight:700}
+    .credit .line{
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      margin-top:2px;
+    }
+    .credit .line::before,.credit .line::after{
+      content:'';width:35px;height:1px;background:linear-gradient(90deg, transparent, #0ff);
+    }
+    .credit .line::after{background:linear-gradient(90deg, #0ff, transparent);}
+    .credit small{font-size:11px;color:#5a6a8a}
+
+    footer{
+      border-top: 1px solid rgba(0,255,255,0.25);
+      text-align: center;
+      position: fixed;
+      bottom: 0.6%;
+      border-radius: 20px;
+      padding: 10px;
+      width: 92.5%;
+      height: 5%;
+      background: #000040;
+      display:flex;justify-content:space-around;align-items:center;
+      z-index:10;
+    }
+    footer a{text-decoration:none;color:white;font-weight:bold;padding:10px;display:flex;flex-direction:column;align-items:center;font-size:12px}
+    footer a.active{color:#0ff;text-shadow:0 0 10px #0ff}
+</style>
+</head>
+<body>
+<section>
+<header><div class="back" onclick="history.back()">‹</div><h2>Settings</h2></header>
+<main>
+<div class="section-title">Security</div>
+<div class="card">
+<div class="row" onclick="openLoginInfo()"><div class="icon">👤</div><div class="text"><b>Login Information</b><span>Change the password used to enter your vault</span></div><div class="arrow">›</div></div>
+<div class="row" onclick="toggleFP()"><div class="icon">🌀</div><div class="text"><b>Fingerprint Unlock</b><span id="fpStatus">Disabled</span></div><div class="switch" id="fpSwitch"></div></div>
+
+      <!-- CHANGED ONLY THIS ROW TO OPEN WHATSAPP STYLE -->
+      <div class="row" onclick="openAutoLock()">
+        <div class="icon">🕒</div>
+        <div class="text"><b>Auto-Lock</b><span id="autoLockText">Lock after 5 minutes</span></div>
+        <div class="arrow">›</div>
+      </div>
+
+      <div class="row">
+        <div class="icon">🪪</div>
+        <div class="text"><b>Device Credential</b><span>Use device PIN/Pattern</span></div>
+        <div class="switch" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+</div>
+    <div class="section-title">Appearance</div>
+    <div class="card">
+      <div class="row">
+        <div class="icon">🌙</div>
+        <div class="text"><b>Dark Mode</b><span>Use dark theme</span></div>
+        <div class="switch on" onclick="this.classList.toggle('on'); document.body.classList.toggle('light')"></div>
+      </div>
+      <div class="row" onclick="showPopup('🌐','Language','Langage settings coming soon 😳')">
+        <div class="icon">🌐</div>
+        <div class="text"><b>Language</b><span>English</span></div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+
+<div class="card">
+<div class="row" onclick="showPopup('📱','App Settings','Folder Locker v1.0 - All active')"><div class="icon">⚙️</div><div class="text"><b>App Settings</b><span>Manage preferences</span></div><div>›</div></div>
+<div class="row" onclick="clearCache()"><div class="icon">🧹</div><div class="text"><b>Clear Cache</b><span>Free up space</span></div><div>›</div></div>
+<div class="row">
+     <small style="color: red; font-weight: bold">⚠️Warning!!. Keep this one off</small> <div class="switch on" onclick="this.classList.toggle('on')"></div>
+      </div>
+</div>
+<div class="section-title">About</div>
+<div class="card"><div class="row"><div class="icon">ℹ️</div><div class="text"><b>App Version</b></div><div style="color:#8aa0c8">V1.0 </div></div></div>
+    <div class="credit">
+     
+     <div class="name">Designed by <b>AHMED K SanShania</b></div>
+      <div class="line"><small>create the feeling</small></div>
+     
+    </div>
+  </main>
+  <footer>
+    <a href="index.html">🏠 Home</a>
+    <a href="files.html">📁 Files</a>
+    <a class="active" href="settings.html">⚙️ Settings</a>
+  </footer>
+</main>
+<footer><a href="index.html">🏠 Home</a><a href="files.html">📁 Files</a><a class="active" href="settings.html">⚙️ Settings</a></footer>
+
+<!-- WHATSAPP STYLE AUTOLOCK SHEET - ADDED ONLY -->
+<div class="autoLock-sheet" id="autoLockSheet" onclick="if(event.target===this)closeAutoLock()">
+  <div class="autoLock-box">
+    <div class="sheet-title">Auto-Lock <span onclick="closeAutoLock()" style="width:32px;height:32px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer">✕</span></div>
+    <div style="padding:0 20px 10px;color:#8aa0c8;font-size:12.5px">Automatically lock vault after selected time - like WhatsApp</div>
+
+    <div class="sheet-opt" data-val="immediately" onclick="setAutoLock('immediately')"><div class="icon">⚡</div><div class="text"><b>Immediately</b><span>Lock instantly when app closes</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="1min" onclick="setAutoLock('1min')"><div class="icon">⏱️</div><div class="text"><b>After 1 minute</b><span>Recommended for privacy</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="5min" onclick="setAutoLock('5min')"><div class="icon">🕒</div><div class="text"><b>After 5 minutes</b><span>Default - balanced</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="30min" onclick="setAutoLock('30min')"><div class="icon">⏰</div><div class="text"><b>After 30 minutes</b><span>Less secure but convenient</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="1hour" onclick="setAutoLock('1hour')"><div class="icon">🕐</div><div class="text"><b>After 1 hour</b><span>Stay unlocked longer</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="never" onclick="setAutoLock('never')"><div class="icon">🔓</div><div class="text"><b>Never</b><span>Keep vault unlocked - not recommended</span></div><div class="check">✓</div></div>
+  </div>
+</div>
+
+<div class="overlay" id="loginInfoModal"><div class="modal"><h3 style="text-align:center;color:#0ff">Login Information</h3><div class="inputBox"><span>🔒</span><input type="password" id="loginOld" placeholder="Current password"><span class="eye" onclick="toggleEye('loginOld',this)">👁️</span></div><div class="inputBox"><span>🔑</span><input type="password" id="loginNew" placeholder="New password"><span class="eye" onclick="toggleEye('loginNew',this)">👁️</span></div><div class="inputBox"><span>✅</span><input type="password" id="loginConfirm" placeholder="Confirm new password"><span class="eye" onclick="toggleEye('loginConfirm',this)">👁️</span></div><button class="popup-btn" onclick="saveLoginInfo()">Save Login Info</button><button class="popup-btn" style="background:rgba(255,60,60,.2);border:1px solid #ff6b6b;color:#ff6b6b" onclick="closeLoginInfo()">Close</button></div></div><div class="popup-overlay" id="popup"><div class="popup-box"><div id="pIcon" style="font-size:42px">🔒</div><div id="pTitle" style="color:#0ff;font-weight:800">Settings</div><div id="pMsg" style="font-size:13px;color:#c0d0f0;margin:12px 0">Message</div><button class="popup-btn" onclick="closePopup()">OK</button></div></div>
+</section>
+
+<script src="vault.js"></script><script>
+if(!requireUnlock())throw new Error('locked');
+// Save toggle states
+document.querySelectorAll('.switch').forEach((sw,i)=>{
+  let saved=localStorage.getItem('setting_toggle_'+i);
+  if(saved==='on') sw.classList.add('on');
+  if(saved==='off') sw.classList.remove('on');
+  sw.addEventListener('click',()=>{
+    setTimeout(()=>{
+      localStorage.setItem('setting_toggle_'+i, sw.classList.contains('on')?'on':'off');
+    },100);
+  });
+});
+updateFP();
+</script>
+<script>
+function showPopup(i,t,m){pIcon.textContent=i;pTitle.textContent=t;pMsg.textContent=m;popup.classList.add('show')}
+function closePopup(){popup.classList.remove('show')}
+function toggleEye(id,el){let inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';el.textContent='🙈'}else{inp.type='password';el.textContent='👁️'}}
+function updateFP(){let on=window.AndroidVault&&AndroidVault.isFingerprintEnabled&&AndroidVault.isFingerprintEnabled();fpSwitch.classList.toggle('on',!!on);fpStatus.textContent=on?'Enabled':'Disabled'}
+function toggleFP(){let on=!fpSwitch.classList.contains('on');if(window.AndroidVault)AndroidVault.setFingerprintEnabled(on);updateFP();showPopup(on?'✅':'⚠️','Fingerprint '+(on?'Enabled':'Disabled'),on?'Fingerprint is now allowed on the login page.':'Fingerprint was disabled. Use your registered password or your phone unlock method.');}
+function openLoginInfo(){loginInfoModal.classList.add('show')}function closeLoginInfo(){loginInfoModal.classList.remove('show')}
+function saveLoginInfo(){let o=loginOld.value,n=loginNew.value,c=loginConfirm.value;if(!AndroidVault.verifyPassword(o)){showPopup('❌','Wrong Password','Current password is incorrect.');return}if(n.length<4){showPopup('⚠️','Weak Password','Minimum 4 characters.');return}if(n!==c){showPopup('❌','Mismatch','New passwords do not match.');return}if(AndroidVault.setPassword(n)){closeLoginInfo();showPopup('✅','Login Updated','Your new password will be required at the next login.')}else showPopup('❌','Security Error','Password could not be saved.')}
+function clearCache(){sessionStorage.clear();showPopup('🧹','Cleared','Cache cleared successfully ✅');}
+
+/* === ADDED ONLY - WhatsApp Style AutoLock Logic === */
+function openAutoLock(){
+  document.getElementById('autoLockSheet').classList.add('show');
+  let current = localStorage.getItem('autoLock') || '5min';
+  document.querySelectorAll('.sheet-opt').forEach(opt=>{
+    opt.classList.toggle('active', opt.dataset.val===current);
+  });
+}
+function closeAutoLock(){ document.getElementById('autoLockSheet').classList.remove('show'); }
+function setAutoLock(val){
+  localStorage.setItem('autoLock', val);
+  let map={
+    'immediately':'Lock immediately',
+    '1min':'Lock after 1 minute',
+    '5min':'Lock after 5 minutes',
+    '30min':'Lock after 30 minutes',
+    '1hour':'Lock after 1 hour',
+    'never':'Never auto-lock'
+  };
+  document.getElementById('autoLockText').textContent = map[val];
+  document.querySelectorAll('.sheet-opt').forEach(opt=>{
+    opt.classList.toggle('active', opt.dataset.val===val);
+  });
+  setTimeout(closeAutoLock,250);
+  showPopup('🕒','Auto-Lock', map[val]+' - saved');
+}
+// Load saved on start
+(function(){
+  let saved = localStorage.getItem('autoLock') || '5min';
+  let map={
+    'immediately':'Lock immediately',
+    '1min':'Lock after 1 minute',
+    '5min':'Lock after 5 minutes',
+    '30min':'Lock after 30 minutes',
+    '1hour':'Lock after 1 hour',
+    'never':'Never auto-lock'
+  };
+  document.getElementById('autoLockText').textContent = map[saved];
+})();
+updateFP();
+</script>
+</body>
+</html>
