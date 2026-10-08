@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGameRepo - Glow Hockey</title>
+   <style>
+     * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    color: white;
+    font-family: "Arial", sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.score-container {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 10;
+    gap: 40px;
+}
+
+.score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid;
+    box-shadow: 0 0 15px currentColor;
+}
+
+.ai-score-section {
+    color: #00ff66;
+    border-color: #00ff66;
+}
+
+.player-score-section {
+    color: #ff0066;
+    border-color: #ff0066;
+    margin-top: 100px;
+}
+
+.player-name {
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+.score {
+    font-size: 36px;
+    font-weight: bold;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+.control-btn {
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+#pause-btn {
+    margin-left: auto;
+    color:gold;
+}
+
+#restart-btn {
+    margin-right: auto;
+    color:gold;
+}
+
+.game-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.game-status {
+    position: absolute;
+    top: 70%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    color: #ff0066; /* Default player color */
+    text-shadow: 0 0 15px currentColor;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 20px 30px;
+    border-radius: 15px;
+    border: 3px solid currentColor;
+    box-shadow: 0 0 25px rgba(255, 0, 102, 0.3);
+    z-index: 5;
+}
+
+.game-status.ai-serve {
+    color: #00ff66;
+    top: 30%;
+    box-shadow: 0 0 25px rgba(0, 255, 102, 0.3);
+}
+
+
+/* CONGRATULATIONS EFFECT */
+
+.celebration {
+    position: relative;
+    width: 100%;
+    min-height: 330px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.congrats-title {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    text-align: center;
+    text-shadow:
+        0 0 10px #ffffff,
+        0 0 25px #00ffff,
+        0 0 45px #0088ff;
+    animation: congratsGlow 1s ease-in-out infinite;
+}
+
+.trophy {
+    font-size: 55px;
+    margin: 5px 0 18px;
+    animation: trophyBounce 1s ease-in-out infinite;
+    filter:
+        drop-shadow(0 0 10px #ffff00)
+        drop-shadow(0 0 25px #ffaa00);
+}
+
+.confetti {
+    position: absolute;
+    top: -60px;
+    font-size: 28px;
+    pointer-events: none;
+    animation: confettiFall 3s linear infinite;
+}
+
+.confetti1 { left: 8%; animation-delay: 0s; }
+.confetti2 { left: 25%; animation-delay: 0.7s; }
+.confetti3 { left: 43%; animation-delay: 1.3s; }
+.confetti4 { left: 65%; animation-delay: 0.4s; }
+.confetti5 { left: 82%; animation-delay: 1.8s; }
+.confetti6 { left: 55%; animation-delay: 2.2s; }
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-40px) rotate(0deg);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(430px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes congratsGlow {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.85;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: 1;
+    }
+}
+
+@keyframes trophyBounce {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-10px) scale(1.12);
+    }
+}
+
+.game-over {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.game-over h2 {
+    color: #00ffff;
+    font-size: 48px;
+    margin-bottom: 30px;
+    text-shadow: 0 0 30px #00ffff;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+
+/* =========================
+   GAME OVER CELEBRATION
+   ========================= */
+
+.game-over {
+    animation: gameOverFadeIn 0.5s ease-out;
+    backdrop-filter: blur(6px);
+}
+
+.game-over h2 {
+    animation:
+        winnerPulse 1.2s ease-in-out infinite,
+        winnerZoom 0.7s ease-out;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+@keyframes gameOverFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(1.08);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes winnerPulse {
+    0%, 100% {
+        transform: scale(1);
+        text-shadow:
+            0 0 15px #00ffff,
+            0 0 30px #00ffff,
+            0 0 50px #0088ff;
+    }
+
+    50% {
+        transform: scale(1.08);
+        text-shadow:
+            0 0 25px #ffffff,
+            0 0 50px #00ffff,
+            0 0 80px #0088ff;
+    }
+}
+
+@keyframes winnerZoom {
+    from {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.restart-btn {
+    animation: restartGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes restartGlow {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px #00ffff;
+    }
+
+    50% {
+        transform: scale(1.06);
+        box-shadow:
+            0 0 30px #00ffff,
+            0 0 60px #0088ff;
+    }
+}
+
+.restart-btn {
+    padding: 15px 40px;
+    font-size: 24px;
+    background: linear-gradient(45deg, #00ffff, #0088cc);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    box-shadow: 0 0 25px #00ffff;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.restart-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px #00ffff;
+}
+
+@media (max-width: 768px) {
+    .score-container {
+        right: 10px;
+    }
+
+    .score-section {
+        padding: 5px 10px;
+    }
+
+    .score {
+        font-size: 22px;
+    }
+
+    .player-name {
+        font-size: 14px;
+    }
+
+    .game-status {
+        font-size: 18px;
+        padding: 15px 20px;
+    }
+
+    .control-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .player-score-section {
+        margin-top: 80px;
+    }
+
+    .controls {
+        padding: 0 10px;
+    }
+}
+
+
+  #popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .popup-content {
+    background: linear-gradient(145deg, #111, #1e1e1e);
+    color: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 350px;
+    text-align: center;
+    box-shadow: 0 0 25px cyan;
+    font-family: Arial, sans-serif;
+    animation: popupAnim 0.4s ease;
+  }
+
+  .popup-content h2 {
+    color: cyan;
+    margin-bottom: 15px;
+  }
+
+  .popup-content p {
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  .popup-content button {
+    margin-top: 18px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    background: cyan;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .popup-content button:hover {
+    background: white;
+    transform: scale(1.05);
+  }
+
+  @keyframes popupAnim {
+    from {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+   </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="restart-btn" class="control-btn">Restart</button>
+        <button id="pause-btn" class="control-btn">Pause</button>
+    </div>
+
+    <div class="score-container">
+        <div class="score-section ai-score-section">
+            <div class="player-name">BATEMAN</div>
+            <div class="score" id="aiScore">0</div>
+        </div>
+
+        <div class="score-section player-score-section">
+            <div class="player-name">YOU ✅</div>
+            <div class="score" id="playerScore">0</div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-status" id="gameStatus">Touch the ball to start!</div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="celebration" id="celebration">
+
+            <div class="confetti confetti1">🎉</div>
+            <div class="confetti confetti2">✨</div>
+            <div class="confetti confetti3">🎊</div>
+            <div class="confetti confetti4">⭐</div>
+            <div class="confetti confetti5">🎉</div>
+            <div class="confetti confetti6">✨</div>
+
+            <div class="congrats-title">CONGRATULATIONS!</div>
+
+            <h2 id="winnerText">Game Over</h2>
+
+            <div class="trophy">🏆</div>
+
+            <button id="restart-game" class="restart-btn">
+                🔄 Play Again
+            </button>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+<div id="popup">
+  <div class="popup-content">
+    <h2>👋 Hello Guys ;) </h2>
+
+    <p>
+      🎮 Welcome to my first game:<br>
+      <strong>✨ GLOW HOCKEY ✨</strong><br><br>
+
+      ⏳ It took me about a week to code this game.<br>
+      🧠 I learned many new things during development<br>
+      and now it’s finally finished 🚀<br><br>
+
+     💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙💙<br>
+      💬 Feedback is always welcome!<br><br>
+
+      👨‍💻 <strong style="text-shadow: 0  4px 0 rgba(3,0,255,0.9); color: #f0f;"> Ahmed K SanShania 😎</strong>
+    </p>
+
+    <button onclick="closePopup()">❌ Close</button>
+  </div>
+</div>
+<script>
+  window.addEventListener("load", function() {
+
+    // Game elements
+    const gameCanvas = document.getElementById("gameCanvas");
+    const gameContext = gameCanvas.getContext("2d");
+
+    // Game state object
+    const gameState = {
+        playerPaddle: { xPosition: 0, yPosition: 0, radius: 30, score: 0 },
+        aiPaddle: { xPosition: 0, yPosition: 0, radius: 30, score: 0 },
+        gameBall: {
+            xPosition: 0,
+            yPosition: 0,
+            radius: 15,
+            velocityX: 0,
+            velocityY: 0,
+            maxSpeed: 14,
+            minSpeed: 8
+        },
+        isGameRunning: false,
+        isGameStarted: false,
+        isPaused: false,
+        winningScore: 7,
+        lastScorer: null,
+        aiDifficulty: 0.7,
+        ballGlowEffect: 0
+    };
+
+    // Adjust canvas size to fit container
+    function resizeGameCanvas() {
+        const gameContainer = document.querySelector(".game-container");
+        gameCanvas.width = gameContainer.clientWidth;
+        gameCanvas.height = gameContainer.clientHeight;
+
+        // Position game objects after resize
+        gameState.playerPaddle.xPosition = gameCanvas.width / 2;
+        gameState.playerPaddle.yPosition = gameCanvas.height * 0.85;
+        gameState.aiPaddle.xPosition = gameCanvas.width / 2;
+        gameState.aiPaddle.yPosition = gameCanvas.height * 0.15;
+        resetBallPosition();
+    }
+
+    // Reset ball to center position
+    function resetBallPosition() {
+        gameState.gameBall.xPosition = gameCanvas.width / 2;
+        gameState.gameBall.yPosition = gameCanvas.height / 2;
+        gameState.gameBall.velocityX = 0;
+        gameState.gameBall.velocityY = 0;
+        gameState.ballGlowEffect = 0;
+    }
+
+    // Initialize canvas size and handle window resize
+    resizeGameCanvas();
+    window.addEventListener("resize", resizeGameCanvas);
+
+    // Reset ball and determine next server
+    function resetBall(nextServer = null) {
+        resetBallPosition();
+        gameState.isGameRunning = false;
+        const gameStatusElement = document.getElementById("gameStatus");
+
+        // Default Player Color
+        gameStatusElement.style.color = "#ff0066";
+        gameStatusElement.style.borderColor = "#ff0066";
+        gameStatusElement.style.boxShadow = "0 0 25px rgba(255, 0, 102, 0.3)";
+        gameStatusElement.classList.remove("ai-serve");
+
+        if (nextServer === "player") {
+            gameStatusElement.textContent = "Touch the ball to serve!";
+            gameStatusElement.style.display = "block";
+            gameStatusElement.style.top = "70%";
+        } else if (nextServer === "ai") {
+            gameStatusElement.textContent = "Computer serves next...";
+            gameStatusElement.style.display = "block";
+            gameStatusElement.style.top = "30%";
+
+            // Set AI Color
+            gameStatusElement.style.color = "#00ff66";
+            gameStatusElement.style.borderColor = "#00ff66";
+            gameStatusElement.style.boxShadow = "0 0 25px rgba(0, 255, 102, 0.3)";
+            gameStatusElement.classList.add("ai-serve");
+
+            // AI serves after a short delay
+            setTimeout(() => {
+                if (!gameState.isGameRunning && !gameState.isPaused) {
+                    startBallMovement("ai");
+                }
+            }, 1500);
+        } else {
+            gameStatusElement.textContent = "Touch the ball to start!";
+            gameStatusElement.style.display = "block";
+        }
+    }
+
+    // Start ball movement with initial velocity
+    function startBallMovement(server) {
+        const randomAngle = (Math.random() - 0.5) * Math.PI / 4;
+        const initialSpeed = gameState.gameBall.minSpeed;
+
+        if (server === "player") {
+            gameState.gameBall.velocityX = Math.sin(randomAngle) * initialSpeed;
+            gameState.gameBall.velocityY = -Math.cos(randomAngle) * initialSpeed;
+        } else {
+            gameState.gameBall.velocityX = Math.sin(randomAngle) * initialSpeed;
+            gameState.gameBall.velocityY = Math.cos(randomAngle) * initialSpeed;
+        }
+
+        gameState.isGameRunning = true;
+        gameState.isGameStarted = true;
+        document.getElementById("gameStatus").style.display = "none";
+    }
+
+    // Draw the game field with neon borders
+    function drawGameField() {
+        // Black background
+        gameContext.fillStyle = "#000000";
+        gameContext.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // Neon border effect
+        const borderGradient = gameContext.createLinearGradient(0, 0, gameCanvas.width, 0);
+        borderGradient.addColorStop(0, "#4CC2A7");
+        borderGradient.addColorStop(0.5, "#000000");
+        borderGradient.addColorStop(1, "#6B45DB");
+
+        gameContext.strokeStyle = borderGradient;
+        gameContext.lineWidth = 8;
+        gameContext.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // Center line with dashed effect
+        gameContext.strokeStyle = "#AAAAAA";
+        gameContext.lineWidth = 4;
+        gameContext.setLineDash([15, 15]);
+        gameContext.beginPath();
+        gameContext.moveTo(20, gameCanvas.height / 2);
+        gameContext.lineTo(gameCanvas.width - 20, gameCanvas.height / 2);
+        gameContext.stroke();
+        gameContext.setLineDash([]);
+
+        // Center circle
+        gameContext.beginPath();
+        gameContext.arc(gameCanvas.width / 2, gameCanvas.height / 2, 60, 0, Math.PI * 2);
+        gameContext.stroke();
+
+        // Goals
+        const goalWidth = gameCanvas.width * 0.5;
+        const goalX = (gameCanvas.width - goalWidth) / 2;
+
+        // AI goal (top) - AI Color
+        gameContext.strokeStyle = "#00ff66"; // AI rengi
+        gameContext.lineWidth = 7;
+        gameContext.strokeRect(goalX, 0, goalWidth, 25);
+        gameContext.fillStyle = "rgba(0, 255, 102, 0.1)";
+        gameContext.fillRect(goalX, 0, goalWidth, 25);
+
+        // Player goal (bottom) - Player Color
+        gameContext.strokeStyle = "#ff0066"; // Oyuncu rengi
+        gameContext.strokeRect(goalX, gameCanvas.height - 25, goalWidth, 25);
+        gameContext.fillStyle = "rgba(255, 0, 102, 0.1)";
+        gameContext.fillRect(goalX, gameCanvas.height - 25, goalWidth, 25);
+    }
+
+    // Draw a paddle with glow effect
+    function drawPaddle(paddle, color, isPlayer = false) {
+        // Outer glow
+        gameContext.shadowColor = color;
+        gameContext.shadowBlur = 20;
+
+        // Main paddle body
+        gameContext.fillStyle = color;
+        gameContext.beginPath();
+        gameContext.arc(paddle.xPosition, paddle.yPosition, paddle.radius, 0, Math.PI * 2);
+        gameContext.fill();
+
+        // Inner ring
+        gameContext.strokeStyle = "#FFFFFF";
+        gameContext.lineWidth = 6;
+        gameContext.beginPath();
+        gameContext.arc(paddle.xPosition, paddle.yPosition, paddle.radius - 8, 0, Math.PI * 2);
+        gameContext.stroke();
+
+        // Center dot
+        gameContext.fillStyle = "#000000";
+        gameContext.beginPath();
+        gameContext.arc(paddle.xPosition, paddle.yPosition, 7, 0, Math.PI * 2);
+        gameContext.fill();
+
+        gameContext.shadowBlur = 0;
+    }
+
+    // Draw the ball with pulsing glow effect
+    function drawBall() {
+        gameState.ballGlowEffect += 0.1;
+        const glowIntensity = Math.sin(gameState.ballGlowEffect) * 10 + 15;
+
+        // Ball glow effect
+        gameContext.shadowColor = "#ffff00";
+        gameContext.shadowBlur = glowIntensity;
+
+        // Main ball
+        gameContext.fillStyle = "#ffff00";
+        gameContext.beginPath();
+        gameContext.arc(gameState.gameBall.xPosition, gameState.gameBall.yPosition, gameState.gameBall.radius, 0, Math.PI * 2);
+        gameContext.fill();
+
+        // Ball border
+        gameContext.strokeStyle = "#ffaa00";
+        gameContext.lineWidth = 3;
+        gameContext.stroke();
+
+        // Ball highlight
+        gameContext.fillStyle = "#ffffff";
+        gameContext.beginPath();
+        gameContext.arc(gameState.gameBall.xPosition - 4, gameState.gameBall.yPosition - 4, 4, 0, Math.PI * 2);
+        gameContext.fill();
+
+        gameContext.shadowBlur = 0;
+    }
+
+    // Update ball position and handle collisions
+
+    // =========================
+    // GLOW HOCKEY SOUND SYSTEM
+    // =========================
+    let audioContext = null;
+
+    function initGameAudio() {
+        try {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            if (audioContext.state === "suspended") {
+                audioContext.resume();
+            }
+        } catch (e) {
+            console.log("Audio unavailable:", e);
+        }
+    }
+
+    function playGameSound(type) {
+        try {
+            initGameAudio();
+            if (!audioContext) return;
+
+            const now = audioContext.currentTime;
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+
+            if (type === "paddle") {
+                oscillator.type = "sine";
+                oscillator.frequency.setValueAtTime(420, now);
+                oscillator.frequency.exponentialRampToValueAtTime(760, now + 0.08);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+                oscillator.start(now);
+                oscillator.stop(now + 0.1);
+
+            } else if (type === "wall") {
+                oscillator.type = "triangle";
+                oscillator.frequency.setValueAtTime(220, now);
+                oscillator.frequency.exponentialRampToValueAtTime(360, now + 0.05);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.10, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+                oscillator.start(now);
+                oscillator.stop(now + 0.07);
+
+            } else if (type === "goal") {
+                oscillator.type = "sine";
+                oscillator.frequency.setValueAtTime(330, now);
+                oscillator.frequency.setValueAtTime(520, now + 0.12);
+                oscillator.frequency.setValueAtTime(740, now + 0.24);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+                oscillator.start(now);
+                oscillator.stop(now + 0.4);
+
+            } else if (type === "gameover") {
+                oscillator.type = "sawtooth";
+                oscillator.frequency.setValueAtTime(650, now);
+                oscillator.frequency.exponentialRampToValueAtTime(180, now + 0.45);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.20, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                oscillator.start(now);
+                oscillator.stop(now + 0.52);
+
+            } else if (type === "victory") {
+                const notes = [
+                    { frequency: 523.25, time: 0.00 },
+                    { frequency: 659.25, time: 0.13 },
+                    { frequency: 783.99, time: 0.26 },
+                    { frequency: 1046.50, time: 0.39 }
+                ];
+
+                notes.forEach(note => {
+                    const winOscillator = audioContext.createOscillator();
+                    const winGain = audioContext.createGain();
+
+                    winOscillator.connect(winGain);
+                    winGain.connect(audioContext.destination);
+
+                    winOscillator.type = "sine";
+                    winOscillator.frequency.setValueAtTime(
+                        note.frequency,
+                        now + note.time
+                    );
+
+                    winGain.gain.setValueAtTime(
+                        0.0001,
+                        now + note.time
+                    );
+
+                    winGain.gain.exponentialRampToValueAtTime(
+                        0.18,
+                        now + note.time + 0.02
+                    );
+
+                    winGain.gain.exponentialRampToValueAtTime(
+                        0.0001,
+                        now + note.time + 0.16
+                    );
+
+                    winOscillator.start(now + note.time);
+                    winOscillator.stop(now + note.time + 0.18);
+                });
+
+            } else if (type === "button") {
+                oscillator.type = "square";
+                oscillator.frequency.setValueAtTime(500, now);
+                oscillator.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+                oscillator.start(now);
+                oscillator.stop(now + 0.07);
+            }
+        } catch (e) {
+            console.log("Sound error:", e);
+        }
+    }
+
+    document.addEventListener("pointerdown", function unlockGameAudio() {
+        initGameAudio();
+    }, { once: true });
+
+    function updateBallPosition() {
+        if (!gameState.isGameRunning || gameState.isPaused) return;
+
+        gameState.gameBall.xPosition += gameState.gameBall.velocityX;
+        gameState.gameBall.yPosition += gameState.gameBall.velocityY;
+
+        // Side wall collisions
+        if (gameState.gameBall.xPosition <= gameState.gameBall.radius ||
+            gameState.gameBall.xPosition >= gameCanvas.width - gameState.gameBall.radius) {
+            gameState.gameBall.velocityX *= -0.9;
+            playGameSound("wall");
+            gameState.gameBall.xPosition = Math.max(gameState.gameBall.radius,
+                Math.min(gameCanvas.width - gameState.gameBall.radius, gameState.gameBall.xPosition));
+        }
+
+        const goalWidth = gameCanvas.width * 0.5;
+        const goalX = (gameCanvas.width - goalWidth) / 2;
+
+        // Top goal check (AI scores)
+        if (gameState.gameBall.yPosition <= gameState.gameBall.radius) {
+            if (gameState.gameBall.xPosition >= goalX && gameState.gameBall.xPosition <= goalX + goalWidth) {
+                gameState.playerPaddle.score++;
+                playGameSound("goal");
+                gameState.lastScorer = "player";
+                updateScoreDisplay();
+                if (gameState.playerPaddle.score >= gameState.winningScore) {
+                    endGame("YOU Wins!👏😁😇👺👺");
+                } else {
+                    resetBall("ai");// Player scored, reset serves next
+                }
+            } else {
+                gameState.gameBall.velocityY *= -0.9;
+                gameState.gameBall.yPosition = gameState.gameBall.radius;
+            }
+        }
+
+        // Bottom goal check (Player scores)
+        if (gameState.gameBall.yPosition >= gameCanvas.height - gameState.gameBall.radius) {
+            if (gameState.gameBall.xPosition >= goalX && gameState.gameBall.xPosition <= goalX + goalWidth) {
+                gameState.aiPaddle.score++;
+                playGameSound("goal");
+                gameState.lastScorer = "ai";
+                updateScoreDisplay();
+                if (gameState.aiPaddle.score >= gameState.winningScore) {
+                    endGame("Computer Wins!☠️👽👽👽☠️");
+                } else {
+                    resetBall("player"); // AI scored, so Player serves next
+                }
+            } else {
+                gameState.gameBall.velocityY *= -0.9;
+                gameState.gameBall.yPosition = gameCanvas.height - gameState.gameBall.radius;
+            }
+        }
+    }
+
+    // Check for collision between ball and paddle
+    function checkPaddleCollision(paddle) {
+        if (!gameState.isGameRunning || gameState.isPaused) return;
+
+        const deltaX = gameState.gameBall.xPosition - paddle.xPosition;
+        const deltaY = gameState.gameBall.yPosition - paddle.yPosition;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        if (distance < gameState.gameBall.radius + paddle.radius) {
+            const collisionAngle = Math.atan2(deltaY, deltaX);
+            const currentSpeed = Math.sqrt(
+                gameState.gameBall.velocityX * gameState.gameBall.velocityX +
+                gameState.gameBall.velocityY * gameState.gameBall.velocityY
+            );
+            const newSpeed = Math.min(currentSpeed * 1.15, gameState.gameBall.maxSpeed);
+
+            gameState.gameBall.velocityX = Math.cos(collisionAngle) * newSpeed;
+            gameState.gameBall.velocityY = Math.sin(collisionAngle) * newSpeed;
+
+            playGameSound("paddle");
+
+            const overlap = gameState.gameBall.radius + paddle.radius - distance;
+            gameState.gameBall.xPosition += Math.cos(collisionAngle) * overlap;
+            gameState.gameBall.yPosition += Math.sin(collisionAngle) * overlap;
+        }
+    }
+
+    // Update AI paddle position with difficulty adjustment
+    function updateAIPaddle() {
+        if (!gameState.isGameRunning || gameState.isPaused) return;
+
+        const aiSpeed = 7;
+        const predictionFactor = 0.4;
+
+        let targetX = gameState.gameBall.xPosition;
+
+        // Predict ball movement for better AI
+        if (gameState.gameBall.velocityY < 0 && gameState.gameBall.yPosition < gameCanvas.height * 0.7) {
+            const timeToReach = Math.abs(gameState.gameBall.yPosition - gameState.aiPaddle.yPosition) /
+                Math.abs(gameState.gameBall.velocityY);
+            targetX = gameState.gameBall.xPosition + (gameState.gameBall.velocityX * timeToReach * predictionFactor);
+
+            // Add some randomness to make AI beatable
+            targetX += (Math.random() - 0.5) * 100 * (1 - gameState.aiDifficulty);
+        }
+
+        const distance = targetX - gameState.aiPaddle.xPosition;
+
+        if (Math.abs(distance) > 5) {
+            const moveSpeed = Math.min(aiSpeed * gameState.aiDifficulty, Math.abs(distance) * 0.3);
+            if (distance > 0) {
+                gameState.aiPaddle.xPosition += moveSpeed;
+            } else {
+                gameState.aiPaddle.xPosition -= moveSpeed;
+            }
+        }
+
+        // Keep AI in bounds
+        gameState.aiPaddle.xPosition = Math.max(
+            gameState.aiPaddle.radius,
+            Math.min(gameCanvas.width - gameState.aiPaddle.radius, gameState.aiPaddle.xPosition)
+        );
+        gameState.aiPaddle.yPosition = Math.max(
+            gameState.aiPaddle.radius + 30,
+            Math.min(gameCanvas.height / 2 - 60, gameState.aiPaddle.yPosition)
+        );
+    }
+
+    // Handle user input for paddle movement
+    function handleUserInput(inputX, inputY) {
+        // Check if clicking/touching the ball to start
+        if (!gameState.isGameRunning && !gameState.isPaused) {
+            const distanceToBall = Math.sqrt(
+                Math.pow(inputX - gameState.gameBall.xPosition, 2) +
+                Math.pow(inputY - gameState.gameBall.yPosition, 2)
+            );
+
+            if (distanceToBall < gameState.gameBall.radius + 30) {
+                startBallMovement("player");
+                return;
+            }
+        }
+
+        // Move player paddle (only in bottom half)
+        if (inputY > gameCanvas.height / 2 && !gameState.isPaused) {
+            gameState.playerPaddle.xPosition = inputX;
+            gameState.playerPaddle.yPosition = inputY;
+
+            gameState.playerPaddle.xPosition = Math.max(
+                gameState.playerPaddle.radius,
+                Math.min(gameCanvas.width - gameState.playerPaddle.radius, gameState.playerPaddle.xPosition)
+            );
+            gameState.playerPaddle.yPosition = Math.max(
+                gameCanvas.height / 2 + 60,
+                Math.min(gameCanvas.height - gameState.playerPaddle.radius - 30, gameState.playerPaddle.yPosition)
+            );
+        }
+    }
+
+    // Touch events for mobile devices
+    gameCanvas.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        const canvasRect = gameCanvas.getBoundingClientRect();
+        const touch = event.touches[0];
+        const inputX = (touch.clientX - canvasRect.left) * (gameCanvas.width / canvasRect.width);
+        const inputY = (touch.clientY - canvasRect.top) * (gameCanvas.height / canvasRect.height);
+        handleUserInput(inputX, inputY);
+    });
+
+    gameCanvas.addEventListener("touchmove", (event) => {
+        event.preventDefault();
+        const canvasRect = gameCanvas.getBoundingClientRect();
+        const touch = event.touches[0];
+        const inputX = (touch.clientX - canvasRect.left) * (gameCanvas.width / canvasRect.width);
+        const inputY = (touch.clientY - canvasRect.top) * (gameCanvas.height / canvasRect.height);
+        handleUserInput(inputX, inputY);
+    });
+
+    // Mouse events for desktop
+    gameCanvas.addEventListener("mousedown", (event) => {
+        const canvasRect = gameCanvas.getBoundingClientRect();
+        const inputX = (event.clientX - canvasRect.left) * (gameCanvas.width / canvasRect.width);
+        const inputY = (event.clientY - canvasRect.top) * (gameCanvas.height / canvasRect.height);
+        handleUserInput(inputX, inputY);
+    });
+
+    gameCanvas.addEventListener("mousemove", (event) => {
+        const canvasRect = gameCanvas.getBoundingClientRect();
+        const inputX = (event.clientX - canvasRect.left) * (gameCanvas.width / canvasRect.width);
+        const inputY = (event.clientY - canvasRect.top) * (gameCanvas.height / canvasRect.height);
+
+        if (inputY > gameCanvas.height / 2) {
+            handleUserInput(inputX, inputY);
+        }
+    });
+
+    // Update score display
+    function updateScoreDisplay() {
+        document.getElementById("playerScore").textContent = gameState.playerPaddle.score;
+        document.getElementById("aiScore").textContent = gameState.aiPaddle.score;
+    }
+
+    // End game and show winner
+    function endGame(winnerText) {
+        const playerWon = winnerText.startsWith("YOU");
+
+        if (playerWon) {
+            playGameSound("victory");
+        } else {
+            playGameSound("gameover");
+        }
+
+        gameState.isGameRunning = false;
+
+        const congratsTitle = document.querySelector(".congrats-title");
+
+        if (playerWon) {
+            congratsTitle.textContent = "🎉 CONGRATULATIONS! 🎉";
+        } else {
+            congratsTitle.textContent = "☠️ GAME OVER ☠️";
+        }
+
+        document.getElementById("winnerText").textContent = winnerText;
+        document.getElementById("gameOver").style.display = "flex";
+    }
+
+    // Restart game with initial state
+    function restartGame() {
+        gameState.playerPaddle.score = 0;
+        gameState.aiPaddle.score = 0;
+        gameState.playerPaddle.xPosition = gameCanvas.width / 2;
+        gameState.playerPaddle.yPosition = gameCanvas.height * 0.85;
+        gameState.aiPaddle.xPosition = gameCanvas.width / 2;
+        gameState.aiPaddle.yPosition = gameCanvas.height * 0.15;
+        gameState.isGameStarted = false;
+        gameState.isPaused = false;
+        gameState.lastScorer = null;
+        resetBall();
+        updateScoreDisplay();
+        document.getElementById("gameOver").style.display = "none";
+        document.getElementById("pause-btn").textContent = "Pause";
+    }
+
+    // Toggle pause state
+    function togglePause() {
+        gameState.isPaused = !gameState.isPaused;
+        const pauseBtn = document.getElementById("pause-btn");
+
+        if (gameState.isPaused) {
+            pauseBtn.textContent = "Resume";
+            document.getElementById("gameStatus").textContent = "Game Paused";
+            document.getElementById("gameStatus").style.display = "block";
+            document.getElementById("gameStatus").style.top = "50%";
+        } else {
+            pauseBtn.textContent = "Pause";
+            document.getElementById("gameStatus").style.display = "none";
+        }
+    }
+
+    // Main game loop
+    function gameLoop() {
+        if (!gameState.isPaused) {
+            updateBallPosition();
+            updateAIPaddle();
+            checkPaddleCollision(gameState.playerPaddle);
+            checkPaddleCollision(gameState.aiPaddle);
+        }
+
+        // Clear canvas
+        gameContext.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // Draw all game elements
+        drawGameField();
+        drawPaddle(gameState.playerPaddle, "#ff0066", true); // Oyuncu rengi
+        drawPaddle(gameState.aiPaddle, "#00ff66", false); // AI rengi
+        drawBall();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+  // Add event listeners for control buttons
+    const pauseButton = document.getElementById("pause-btn");
+    pauseButton.addEventListener("click", function() {
+        if (gameState.isGameStarted) {
+            togglePause();
+        }
+    });
+
+    const restartButton = document.getElementById("restart-btn");
+    restartButton.addEventListener("click", function() {
+        restartGame();
+    });
+
+    const gameRestartButton = document.getElementById("restart-game");
+    gameRestartButton.addEventListener("click", function() {
+        restartGame();
+    });
+
+    // Initialize game
+    updateScoreDisplay();
+    resetBall();
+    gameLoop();
+});
+
+function closePopup() {
+    document.getElementById("popup").style.display = "none";
+  }
+
+</script>
+</body>
+</html>
+
+
