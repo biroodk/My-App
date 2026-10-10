@@ -35,6 +35,8 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         vaultRoot = new File(getFilesDir(), "vault");
         if (!vaultRoot.exists()) vaultRoot.mkdirs();
+        seedSampleFiles();
+        cleanExpiredSharedFiles();
         webView = new WebView(this);
         setContentView(webView);
         WebSettings s = webView.getSettings();
@@ -156,7 +158,7 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public boolean canUseDeviceCredential(){return canUseBiometric();}
         @JavascriptInterface public void pickFiles(String folder){pendingFolder=folder==null?"":folder;pendingFilter="";runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
-        @JavascriptInterface public void pickFilesForCategory(String category){pendingFolder="";pendingFilter=category==null?"":category;runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);String[] t=categoryTypes(pendingFilter);if(t!=null)i.putExtra(Intent.EXTRA_MIME_TYPES,t);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
+        @JavascriptInterface public void pickFilesForCategory(String category){pendingFolder="";pendingFilter=category==null?"":category;runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);String[] t=categoryTypes(pendingFilter);if(t!=null&&t.length==1)i.setType(t[0]);else{i.setType("*/*");if(t!=null)i.putExtra(Intent.EXTRA_MIME_TYPES,t);}i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
         @JavascriptInterface public boolean createFolder(String parent,String name){if(name==null||name.trim().isEmpty())return false;File p=folderDir(parent);if(p==null)return false;File d=new File(p,cleanName(name));return !d.exists()&&d.mkdirs();}
         @JavascriptInterface public boolean deleteFile(String path){File f=safeRelative(path);return f!=null&&f.isFile()&&f.delete();}
         @JavascriptInterface public boolean deleteFolder(String path){File f=safeRelative(path);return f!=null&&f.isDirectory()&&deleteRecursively(f);}
@@ -164,21 +166,9 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean renameFolder(String oldPath,String newName){File a=safeRelative(oldPath);if(a==null||!a.isDirectory()||newName==null||newName.trim().isEmpty())return false;File b=new File(a.getParentFile(),cleanName(newName));return !b.exists()&&a.renameTo(b);}
         @JavascriptInterface public boolean copyFile(String path,String targetFolder){try{File s=safeRelative(path),d0=folderDir(targetFolder);if(s==null||!s.isFile()||d0==null)return false;File d=new File(d0,uniqueName(d0,s.getName()));copyStream(new FileInputStream(s),new FileOutputStream(d));return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean moveFile(String path,String targetFolder){try{File s=safeRelative(path),d0=folderDir(targetFolder);if(s==null||!s.isFile()||d0==null)return false;if(s.getParentFile()!=null && s.getParentFile().equals(d0))return true;File d=new File(d0,uniqueName(d0,s.getName()));copyStream(new FileInputStream(s),new FileOutputStream(d));return s.delete();}catch(Exception e){return false;}}
-        @JavascriptInterface public boolean shareFile(String path){try{File f=safeRelative(path);if(f==null||!f.exists())return false;Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",f);Intent i=new Intent(Intent.ACTION_SEND);i.setType(getMime(f.getName()));i.putExtra(Intent.EXTRA_STREAM,u);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(i,"Share "+f.getName()));return true;}catch(Exception e){return false;}}
-        @JavascriptInterface public boolean shareFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);ArrayList<Uri> us=new ArrayList<>();String mime="*/*";for(int i=0;i<a.length();i++){File f=safeRelative(a.getString(i));if(f!=null&&f.exists()){us.add(FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",f));mime=getMime(f.getName());}}if(us.isEmpty())return false;Intent in=new Intent(Intent.ACTION_SEND_MULTIPLE);in.setType(mime);in.putParcelableArrayListExtra(Intent.EXTRA_STREAM,us);in.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(in,"Share files"));return true;}catch(Exception e){return false;}}
-        @JavascriptInterface public boolean openFile(String path){
-            try{
-                File f=safeRelative(path);
-                if(f==null||!f.isFile()||!f.exists())return false;
-                Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",f);
-                Intent i=new Intent(Intent.ACTION_VIEW);
-                i.setDataAndType(u,getMime(f.getName()));
-                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(Intent.createChooser(i,"Open with"));
-                return true;
-            }catch(android.content.ActivityNotFoundException e){return false;}
-            catch(Exception e){return false;}
-        }
+        @JavascriptInterface public boolean shareFile(String path){try{File f=safeRelative(path);if(f==null||!f.isFile()||!f.exists())return false;File temp=createSharedTempCopy(f);if(temp==null)return false;Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp);Intent i=new Intent(Intent.ACTION_SEND);i.setType(getMime(f.getName()));i.putExtra(Intent.EXTRA_STREAM,u);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(i,"Share temporary copy of "+f.getName()));return true;}catch(Exception e){return false;}}
+        @JavascriptInterface public boolean shareFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);ArrayList<Uri> us=new ArrayList<>();String mime="*/*";for(int i=0;i<a.length();i++){File f=safeRelative(a.getString(i));if(f!=null&&f.isFile()&&f.exists()){File temp=createSharedTempCopy(f);if(temp!=null){us.add(FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp));mime=getMime(f.getName());}}}if(us.isEmpty())return false;Intent in=new Intent(Intent.ACTION_SEND_MULTIPLE);in.setType(mime);in.putParcelableArrayListExtra(Intent.EXTRA_STREAM,us);in.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(in,"Share temporary copies"));return true;}catch(Exception e){return false;}}
+        @JavascriptInterface public boolean openFile(String path){try{File f=safeRelative(path);if(f==null||!f.isFile()||!f.exists())return false;File temp=createSharedTempCopy(f);if(temp==null)return false;Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp);Intent i=new Intent(Intent.ACTION_VIEW);i.setDataAndType(u,getMime(f.getName()));i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(Intent.createChooser(i,"Open temporary copy with"));return true;}catch(android.content.ActivityNotFoundException e){return false;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean exportFile(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=false;startExportPicker();return true;}
         @JavascriptInterface public boolean exportFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);pendingExportPaths=new String[a.length()];for(int i=0;i<a.length();i++)pendingExportPaths[i]=a.getString(i);pendingExportPath="";pendingDeleteAfterExport=false;startExportPicker();return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean removeToDownloads(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=true;startExportPicker();return true;}
@@ -226,6 +216,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void openWhatsApp(){runOnUiThread(()->{try{Intent i=new Intent(Intent.ACTION_VIEW,Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello, can you create for me a website. Please")));if(getPackageManager().resolveActivity(i,0)!=null){startActivity(i);webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(true)",null);}else webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(false)",null);}catch(Exception e){webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(false)",null);}});}
     }
 
+    private void seedSampleFiles(){
+        android.content.SharedPreferences p=prefs();
+        if(p.getBoolean("sample_files_seeded_v1",false))return;
+        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","video1.mp4","video2.mp4","video3.mp4"};
+        for(String name:samples){File out=new File(vaultRoot,name);if(out.exists())continue;try(InputStream in=getAssets().open(name);OutputStream os=new FileOutputStream(out)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)os.write(b,0,n);}catch(Exception e){File partial=new File(vaultRoot,name);if(partial.exists())partial.delete();}}
+        p.edit().putBoolean("sample_files_seeded_v1",true).apply();
+    }
+    private File sharedTempDir(){File d=new File(getCacheDir(),"shared");if(!d.exists())d.mkdirs();return d;}
+    private File createSharedTempCopy(File original)throws IOException{
+        File dir=sharedTempDir();File temp=new File(dir,System.currentTimeMillis()+"_"+UUID.randomUUID().toString().substring(0,8)+"_"+original.getName());
+        try{copyStream(new FileInputStream(original),new FileOutputStream(temp));if(!temp.isFile()||temp.length()!=original.length()){temp.delete();return null;}new Handler(Looper.getMainLooper()).postDelayed(()->{if(temp.exists())temp.delete();},10*60*1000L);return temp;}catch(IOException e){if(temp.exists())temp.delete();throw e;}
+    }
+    private void cleanExpiredSharedFiles(){File d=sharedTempDir();File[] fs=d.listFiles();if(fs==null)return;long cutoff=System.currentTimeMillis()-10*60*1000L;for(File f:fs)if(f.isFile()&&f.lastModified()<cutoff)f.delete();}
     private String[] categoryTypes(String c){if("images".equals(c))return new String[]{"image/*"};if("videos".equals(c))return new String[]{"video/*"};if("music".equals(c))return new String[]{"audio/*"};if("documents".equals(c))return new String[]{"application/pdf","text/*","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.ms-excel","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation"};return null;}
     private void startExportPicker(){runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,EXPORT_TREE);});}
     private android.content.SharedPreferences prefs(){return getSharedPreferences("folder_locker_security",MODE_PRIVATE);}
