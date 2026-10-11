@@ -101,8 +101,16 @@ public class MainActivity extends Activity {
         return d;
     }
     private String relPath(File f) {
-        try { return vaultRoot.getCanonicalFile().toURI().relativize(f.getCanonicalFile().toURI()).getPath().replace("\\","/"); }
-        catch(Exception e){ return f.getName(); }
+        // Use literal filesystem names, not URI-escaped names. URI.relativize() turns
+        // spaces into %20, which made nested folders impossible to reopen on Android.
+        try {
+            String root = vaultRoot.getCanonicalPath();
+            String path = f.getCanonicalPath();
+            if (path.equals(root)) return "";
+            if (path.startsWith(root + File.separator))
+                return path.substring(root.length() + 1).replace(File.separatorChar, '/');
+            return f.getName();
+        } catch (Exception e) { return f.getName(); }
     }
     private String cleanName(String n) { return n == null ? "file" : n.replace('/','_').replace('\\','_').replace("..","_").trim(); }
     private String uniqueName(File dir, String name) {
@@ -217,11 +225,27 @@ public class MainActivity extends Activity {
     }
 
     private void seedSampleFiles(){
-        android.content.SharedPreferences p=prefs();
-        if(p.getBoolean("sample_files_seeded_v1",false))return;
+        // Do not use a one-time preference as the only guard: an earlier APK may have
+        // set it before the sample assets were packaged. Ensure every missing sample
+        // exists on every launch, without overwriting user files already in the vault.
         String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","video1.mp4","video2.mp4","video3.mp4"};
-        for(String name:samples){File out=new File(vaultRoot,name);if(out.exists())continue;try(InputStream in=getAssets().open(name);OutputStream os=new FileOutputStream(out)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)os.write(b,0,n);}catch(Exception e){File partial=new File(vaultRoot,name);if(partial.exists())partial.delete();}}
-        p.edit().putBoolean("sample_files_seeded_v1",true).apply();
+        for(String name:samples){
+            File out=new File(vaultRoot,name);
+            if(out.isFile() && out.length()>0) continue;
+            File temp=new File(vaultRoot,"."+name+".seed");
+            try(InputStream in=getAssets().open(name);OutputStream os=new FileOutputStream(temp)){
+                byte[] b=new byte[65536];int n;
+                while((n=in.read(b))!=-1)os.write(b,0,n);
+                os.flush();
+                if(temp.length()>0){if(out.exists())out.delete();if(!temp.renameTo(out)){try(InputStream ti=new FileInputStream(temp);OutputStream to=new FileOutputStream(out)){byte[] b2=new byte[65536];int m;while((m=ti.read(b2))!=-1)to.write(b2,0,m);}temp.delete();}}
+            }catch(Exception e){if(temp.exists())temp.delete();}
+        }
+        // Names contain spaces intentionally: these folders also exercise literal
+        // path handling and nested navigation.
+        new File(vaultRoot,"Offline Test Samples/Nested Folder").mkdirs();
+        new File(vaultRoot,"Personal").mkdirs();
+        new File(vaultRoot,"Work").mkdirs();
+        prefs().edit().putBoolean("sample_files_seeded_v2",true).apply();
     }
     private File sharedTempDir(){File d=new File(getCacheDir(),"shared");if(!d.exists())d.mkdirs();return d;}
     private File createSharedTempCopy(File original)throws IOException{
