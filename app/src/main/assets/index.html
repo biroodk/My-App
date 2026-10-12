@@ -367,8 +367,8 @@ if(!requireUnlock())throw new Error('locked');
 function updateCounts(){document.querySelectorAll('.folder').forEach(el=>{let h=el.querySelector('b');let span=el.querySelector('span');if(!h||!span)return;let map={Photos:'images',Videos:'videos',Documents:'documents',Music:'music'};let c=map[h.textContent];if(c)span.textContent=listVault(c).length+' items';});}
 updateCounts();
 function updateBioStatus(){let on=window.AndroidVault&&AndroidVault.isFingerprintEnabled&&AndroidVault.isFingerprintEnabled();let el=document.getElementById('bioStatus');if(el)el.innerHTML='🌀 Biometric '+(on?'ON':'OFF')+' <span>›</span>'}
-window.addEventListener('pageshow',updateBioStatus);
-window.addEventListener('focus',updateBioStatus);
+window.addEventListener('pageshow',()=>{updateBioStatus();updateCounts()});
+window.addEventListener('focus',()=>{updateBioStatus();updateCounts()});
 updateBioStatus();
 
 function showPopup(t,m){document.getElementById('pTitle').textContent=t;document.getElementById('pMsg').textContent=m;document.getElementById('popup').classList.add('show')}
@@ -378,7 +378,7 @@ function openWhatsApp(){
  if(!navigator.onLine){showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');return;}
  window.open('https://wa.me/256709387311?text=Hello%20Ahmed.%20can%20you%20create%20for%20me%20a%20website.%20Please','_blank');
 }
-function onWhatsAppResult(ok){if(!ok)showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');}
+
 </script>
 
 </body>

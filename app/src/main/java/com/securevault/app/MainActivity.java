@@ -120,14 +120,22 @@ public class MainActivity extends Activity {
     }
     private String getMime(String n) {
         String x=n.toLowerCase(Locale.ROOT);
-        if(x.endsWith(".jpg")||x.endsWith(".jpeg"))return"image/jpeg"; if(x.endsWith(".png"))return"image/png"; if(x.endsWith(".gif"))return"image/gif"; if(x.endsWith(".webp"))return"image/webp"; if(x.endsWith(".bmp"))return"image/bmp";
-        if(x.endsWith(".mp4"))return"video/mp4"; if(x.endsWith(".webm"))return"video/webm"; if(x.endsWith(".mkv"))return"video/x-matroska"; if(x.endsWith(".3gp"))return"video/3gpp"; if(x.endsWith(".mov"))return"video/quicktime";
-        if(x.endsWith(".mp3"))return"audio/mpeg"; if(x.endsWith(".wav"))return"audio/wav"; if(x.endsWith(".m4a"))return"audio/mp4"; if(x.endsWith(".ogg"))return"audio/ogg"; if(x.endsWith(".aac"))return"audio/aac";
+        if(x.endsWith(".jpg")||x.endsWith(".jpeg"))return"image/jpeg"; if(x.endsWith(".png"))return"image/png"; if(x.endsWith(".gif"))return"image/gif"; if(x.endsWith(".webp"))return"image/webp"; if(x.endsWith(".bmp"))return"image/bmp"; if(x.endsWith(".heic")||x.endsWith(".heif"))return"image/heic"; if(x.endsWith(".avif"))return"image/avif"; if(x.endsWith(".tif")||x.endsWith(".tiff"))return"image/tiff";
+        if(x.endsWith(".mp4")||x.endsWith(".m4v"))return"video/mp4"; if(x.endsWith(".webm"))return"video/webm"; if(x.endsWith(".mkv"))return"video/x-matroska"; if(x.endsWith(".3gp"))return"video/3gpp"; if(x.endsWith(".mov"))return"video/quicktime"; if(x.endsWith(".avi"))return"video/x-msvideo"; if(x.endsWith(".mpeg")||x.endsWith(".mpg"))return"video/mpeg";
+        if(x.endsWith(".mp3"))return"audio/mpeg"; if(x.endsWith(".wav"))return"audio/wav"; if(x.endsWith(".m4a"))return"audio/mp4"; if(x.endsWith(".ogg"))return"audio/ogg"; if(x.endsWith(".aac"))return"audio/aac"; if(x.endsWith(".flac"))return"audio/flac"; if(x.endsWith(".opus"))return"audio/opus"; if(x.endsWith(".mid")||x.endsWith(".midi"))return"audio/midi"; if(x.endsWith(".wma"))return"audio/x-ms-wma";
         if(x.endsWith(".pdf"))return"application/pdf"; if(x.endsWith(".txt"))return"text/plain"; if(x.endsWith(".csv"))return"text/csv"; if(x.endsWith(".doc"))return"application/msword"; if(x.endsWith(".docx"))return"application/vnd.openxmlformats-officedocument.wordprocessingml.document"; if(x.endsWith(".xls"))return"application/vnd.ms-excel"; if(x.endsWith(".xlsx"))return"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; if(x.endsWith(".ppt"))return"application/vnd.ms-powerpoint"; if(x.endsWith(".pptx"))return"application/vnd.openxmlformats-officedocument.presentationml.presentation";
         return"application/octet-stream";
     }
     private boolean isCategory(String c){return Arrays.asList("images","videos","music","documents").contains(c);}
-    private boolean categoryAccepts(String c,String name,String mime){String m=mime==null?getMime(name):mime;if("images".equals(c))return m.startsWith("image/");if("videos".equals(c))return m.startsWith("video/");if("music".equals(c))return m.startsWith("audio/");if("documents".equals(c))return m.equals("application/pdf")||m.startsWith("text/")||name.matches("(?i).*\\.(doc|docx|xls|xlsx|ppt|pptx|csv|txt|pdf)$");return true;}
+    private boolean categoryAccepts(String c,String name,String mime){
+        String m=(mime==null||mime.trim().isEmpty()||"application/octet-stream".equalsIgnoreCase(mime))?getMime(name):mime.toLowerCase(Locale.ROOT);
+        String n=name==null?"":name.toLowerCase(Locale.ROOT);
+        if("images".equals(c))return m.startsWith("image/")||n.matches(".*\\.(jpg|jpeg|png|gif|webp|bmp|heic|heif|avif|tif|tiff)$");
+        if("videos".equals(c))return m.startsWith("video/")||n.matches(".*\\.(mp4|mov|mkv|webm|3gp|avi|mpeg|mpg|m4v)$");
+        if("music".equals(c))return m.startsWith("audio/")||n.matches(".*\\.(mp3|wav|m4a|ogg|aac|flac|mid|midi|opus|wma)$");
+        if("documents".equals(c))return m.equals("application/pdf")||m.startsWith("text/")||m.contains("wordprocessingml")||m.contains("spreadsheetml")||m.contains("presentationml")||m.contains("msword")||m.contains("ms-excel")||m.contains("ms-powerpoint")||n.matches(".*\\.(doc|docx|xls|xlsx|ppt|pptx|csv|txt|pdf|rtf|odt|ods|odp)$");
+        return true;
+    }
 
     private JSONArray scanTree(File dir, String filter, boolean recursive) {
         JSONArray out=new JSONArray(); File[] fs=dir.listFiles(); if(fs==null)return out;
@@ -143,8 +151,8 @@ public class MainActivity extends Activity {
     private JSONArray listTree(){return scanTree(vaultRoot,null,true);}
 
     private class VaultBridge {
-        @JavascriptInterface public String listFiles(String category){return listFiles(category).toString();}
-        @JavascriptInterface public String listTree(){return listTree().toString();}
+        @JavascriptInterface public String listFiles(String category){return MainActivity.this.listFiles(category).toString();}
+        @JavascriptInterface public String listTree(){return MainActivity.this.listTree().toString();}
         @JavascriptInterface public boolean hasPassword(){return prefs().contains("password_hash");}
         @JavascriptInterface public boolean setPassword(String p){if(p==null||p.length()<4)return false;prefs().edit().putString("password_hash",hash(p)).apply();return true;}
         @JavascriptInterface public boolean verifyPassword(String p){String h=prefs().getString("password_hash","");return !h.isEmpty()&&h.equals(hash(p));}
@@ -253,7 +261,7 @@ public class MainActivity extends Activity {
         try{copyStream(new FileInputStream(original),new FileOutputStream(temp));if(!temp.isFile()||temp.length()!=original.length()){temp.delete();return null;}new Handler(Looper.getMainLooper()).postDelayed(()->{if(temp.exists())temp.delete();},10*60*1000L);return temp;}catch(IOException e){if(temp.exists())temp.delete();throw e;}
     }
     private void cleanExpiredSharedFiles(){File d=sharedTempDir();File[] fs=d.listFiles();if(fs==null)return;long cutoff=System.currentTimeMillis()-10*60*1000L;for(File f:fs)if(f.isFile()&&f.lastModified()<cutoff)f.delete();}
-    private String[] categoryTypes(String c){if("images".equals(c))return new String[]{"image/*"};if("videos".equals(c))return new String[]{"video/*"};if("music".equals(c))return new String[]{"audio/*"};if("documents".equals(c))return new String[]{"application/pdf","text/*","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.ms-excel","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation"};return null;}
+    private String[] categoryTypes(String c){if("images".equals(c))return new String[]{"image/*"};if("videos".equals(c))return new String[]{"video/*"};if("music".equals(c))return new String[]{"audio/*"};if("documents".equals(c))return new String[]{"application/pdf","text/*","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.ms-excel","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation","application/rtf","application/vnd.oasis.opendocument.text","application/vnd.oasis.opendocument.spreadsheet","application/vnd.oasis.opendocument.presentation","text/csv"};return null;}
     private void startExportPicker(){runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,EXPORT_TREE);});}
     private android.content.SharedPreferences prefs(){return getSharedPreferences("folder_locker_security",MODE_PRIVATE);}
     private String hash(String s){try{byte[] b=MessageDigest.getInstance("SHA-256").digest(s.getBytes("UTF-8"));StringBuilder x=new StringBuilder();for(byte q:b)x.append(String.format(Locale.US,"%02x",q));return x.toString();}catch(Exception e){return"";}}
@@ -266,20 +274,29 @@ public class MainActivity extends Activity {
             ArrayList<Uri> us=new ArrayList<>();
             if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)us.add(data.getClipData().getItemAt(i).getUri());
             else if(data.getData()!=null)us.add(data.getData());
-            int added=0,removed=0,failedRemove=0;
+            int added=0,removed=0,originalsRemain=0,failed=0;
             String importedFolder=pendingFolder;
+            String importedFilter=pendingFilter;
             for(Uri u:us){
-                boolean ok=copyUri(u,importedFolder,pendingFilter);
-                if(ok){
+                // Verify the vault copy before attempting to remove the original.
+                if(copyUri(u,importedFolder,importedFilter)){
                     added++;
-                    // The original is removed only AFTER a complete, verified vault copy.
-                    if(tryDeleteSource(u))removed++;else failedRemove++;
+                    if(tryDeleteSource(u)) removed++;
+                    else originalsRemain++;
+                }else{
+                    failed++;
                 }
             }
-            final int a=added,r=removed,f=failedRemove;
+            pendingFolder=""; pendingFilter="";
+            final int a=added,r=removed,p=originalsRemain,f=failed;
+            if(a>0){
+                String message=r+" original file(s) removed from phone storage.";
+                if(p>0) message+=" "+p+" original file(s) could not be removed; check your file manager and remove them manually if you want them kept only in the vault.";
+                android.widget.Toast.makeText(MainActivity.this,message,android.widget.Toast.LENGTH_LONG).show();
+            }
             webView.postDelayed(()->webView.evaluateJavascript(
                     "window.onNativeFilesImported&&window.onNativeFilesImported("+
-                    JSONObject.quote(importedFolder)+","+a+","+r+","+f+")",null),150);
+                    JSONObject.quote(importedFolder)+", "+a+", "+r+", "+f+")",null),150);
             return;
         }
         if(requestCode==EXPORT_TREE&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null){Uri tree=data.getData();try{getContentResolver().takePersistableUriPermission(tree,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(Exception ignored){}int done=0;for(String p:pendingExportPaths)if(exportOneToTree(tree,p,pendingDeleteAfterExport))done++;final int n=done;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone("+n+","+pendingExportPaths.length+")",null),150);}
@@ -288,9 +305,8 @@ public class MainActivity extends Activity {
         File temp=null;
         try{
             try{
-                if("content".equalsIgnoreCase(u.getScheme())){
+                if("content".equalsIgnoreCase(u.getScheme()))
                     getContentResolver().takePersistableUriPermission(u,Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                }
             }catch(Exception ignored){}
             String name=queryName(u);
             if(name==null||name.trim().isEmpty())name="file_"+System.currentTimeMillis();
@@ -300,19 +316,21 @@ public class MainActivity extends Activity {
             File dir=folderDir(target);
             if(dir==null||!dir.exists()||!dir.isDirectory())return false;
             File out=new File(dir,uniqueName(dir,name));
-            temp=new File(dir,"."+out.getName()+".importing");
+            InputStream source=getContentResolver().openInputStream(u);
+            if(source==null)return false;
+            temp=new File(dir,"."+out.getName()+"."+UUID.randomUUID().toString().substring(0,8)+".importing");
             long copied=0;
-            try(InputStream in=getContentResolver().openInputStream(u);OutputStream o=new FileOutputStream(temp)){
-                if(in==null)return false;
+            try(InputStream in=source;OutputStream o=new FileOutputStream(temp)){
                 byte[] b=new byte[65536];int n;
                 while((n=in.read(b))!=-1){o.write(b,0,n);copied+=n;}
                 o.flush();
             }
-            if(copied<=0||!temp.exists()||temp.length()!=copied){if(temp.exists())temp.delete();return false;}
+            if(!temp.isFile()||temp.length()!=copied){temp.delete();return false;}
             if(!temp.renameTo(out)){
                 try(InputStream in=new FileInputStream(temp);OutputStream o=new FileOutputStream(out)){
                     byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)o.write(b,0,n);o.flush();
                 }
+                if(!out.isFile()||out.length()!=copied){out.delete();temp.delete();return false;}
                 temp.delete();
             }
             return out.exists()&&out.isFile()&&out.length()==copied;
