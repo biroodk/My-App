@@ -251,6 +251,17 @@ public class MainActivity extends Activity {
                 }
             });
         }
+        @JavascriptInterface public void shareText(String text){
+            runOnUiThread(()->{
+                try{
+                    Intent send=new Intent(Intent.ACTION_SEND);
+                    send.setType("text/plain");
+                    send.putExtra(Intent.EXTRA_TEXT, text==null?"":text);
+                    startActivity(Intent.createChooser(send,"Share Folder Locker"));
+                }catch(Exception ignored){}
+            });
+        }
+
         @JavascriptInterface public void openWhatsApp(){
             runOnUiThread(()->{
                 if(!hasValidatedInternetConnection()){
@@ -300,7 +311,7 @@ public class MainActivity extends Activity {
         // Do not use a one-time preference as the only guard: an earlier APK may have
         // set it before the sample assets were packaged. Ensure every missing sample
         // exists on every launch, without overwriting user files already in the vault.
-        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","video1.mp4","video2.mp4","video3.mp4"};
+        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","sound4.mp3","video1.mp4","video2.mp4","video3.mp4"};
         for(String name:samples){
             File out=new File(vaultRoot,name);
             if(out.isFile() && out.length()>0) continue;

@@ -1,5 +1,9 @@
 plugins { id 'com.android.application' }
 
+// GitHub Actions assigns a monotonically increasing run number so newer APKs
+// can be installed as updates instead of being rejected as the same version.
+def folderLockerBuildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
 android {
     namespace 'com.securevault.app'
     compileSdk 35
@@ -8,8 +12,8 @@ android {
         applicationId 'com.securevault.app'
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName '1.0'
+        versionCode folderLockerBuildNumber
+        versionName "1.0.${folderLockerBuildNumber}"
     }
 
     compileOptions {

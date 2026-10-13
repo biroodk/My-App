@@ -1,0 +1,11 @@
+{
+  "name": "folder-locker-install-page",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'Folder Locker install page is static; Netlify Functions are deployed separately.'"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.5.0"
+  }
+}

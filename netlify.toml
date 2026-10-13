@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "install-page"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/stats"
+  to = "/.netlify/functions/stats"
+  status = 200

@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,9 +28,30 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Folder-Locker-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Prepare public release APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Folder-Locker.apk
+
+      - name: Publish or update latest APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          target_commitish: ${{ github.sha }}
+          name: Folder Locker v1.0.${{ github.run_number }}
+          body: |
+            Latest stable Folder Locker APK.
+            Version: 1.0.${{ github.run_number }}
+            Commit: ${{ github.sha }}
+          files: Folder-Locker.apk
+          overwrite_files: true
+          make_latest: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
