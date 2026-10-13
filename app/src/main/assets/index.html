@@ -371,12 +371,18 @@ window.addEventListener('pageshow',()=>{updateBioStatus();updateCounts()});
 window.addEventListener('focus',()=>{updateBioStatus();updateCounts()});
 updateBioStatus();
 
-function showPopup(t,m){document.getElementById('pTitle').textContent=t;document.getElementById('pMsg').textContent=m;document.getElementById('popup').classList.add('show')}
-function closePopup(){document.getElementById('popup').classList.remove('show')}
+function showPopup(t,m){const title=document.getElementById('pTitle'),msg=document.getElementById('pMsg'),popup=document.getElementById('popup');if(!title||!msg||!popup)return;title.textContent=t;msg.textContent=m;popup.classList.add('show')}
+function closePopup(){document.getElementById('popup')?.classList.remove('show')}
+window.onWhatsAppResult=function(ok){if(!ok)showPopup('WhatsApp Unavailable','WhatsApp could not be opened. Please install WhatsApp or check your internet connection, then try again. 🥺');};
 function openWhatsApp(){
- if(window.AndroidVault&&AndroidVault.openWhatsApp){AndroidVault.openWhatsApp();return;}
- if(!navigator.onLine){showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');return;}
- window.open('https://wa.me/256709387311?text=Hello%20Ahmed.%20can%20you%20create%20for%20me%20a%20website.%20Please','_blank');
+ const url='https://wa.me/256709387311?text='+encodeURIComponent('Hello Ahmed. can you create for me a website. Please');
+ // On Android, try the native WhatsApp app even if the phone is currently offline.
+ if(window.AndroidVault&&typeof AndroidVault.openWhatsApp==='function'){
+  try{AndroidVault.openWhatsApp();}catch(e){showPopup('WhatsApp Unavailable','WhatsApp could not be opened. Please try again. 🥺');}
+  return;
+ }
+ if(!navigator.onLine){showPopup('No Internet Connection','Check your internet connection and try again. 🥺');return;}
+ try{window.location.href=url;}catch(e){showPopup('WhatsApp Unavailable','Unable to open WhatsApp. Please try again. 🥺');}
 }
 
 </script>

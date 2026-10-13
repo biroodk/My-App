@@ -123,9 +123,11 @@ public class MainActivity extends Activity {
         if(x.endsWith(".jpg")||x.endsWith(".jpeg"))return"image/jpeg"; if(x.endsWith(".png"))return"image/png"; if(x.endsWith(".gif"))return"image/gif"; if(x.endsWith(".webp"))return"image/webp"; if(x.endsWith(".bmp"))return"image/bmp"; if(x.endsWith(".heic")||x.endsWith(".heif"))return"image/heic"; if(x.endsWith(".avif"))return"image/avif"; if(x.endsWith(".tif")||x.endsWith(".tiff"))return"image/tiff";
         if(x.endsWith(".mp4")||x.endsWith(".m4v"))return"video/mp4"; if(x.endsWith(".webm"))return"video/webm"; if(x.endsWith(".mkv"))return"video/x-matroska"; if(x.endsWith(".3gp"))return"video/3gpp"; if(x.endsWith(".mov"))return"video/quicktime"; if(x.endsWith(".avi"))return"video/x-msvideo"; if(x.endsWith(".mpeg")||x.endsWith(".mpg"))return"video/mpeg";
         if(x.endsWith(".mp3"))return"audio/mpeg"; if(x.endsWith(".wav"))return"audio/wav"; if(x.endsWith(".m4a"))return"audio/mp4"; if(x.endsWith(".ogg"))return"audio/ogg"; if(x.endsWith(".aac"))return"audio/aac"; if(x.endsWith(".flac"))return"audio/flac"; if(x.endsWith(".opus"))return"audio/opus"; if(x.endsWith(".mid")||x.endsWith(".midi"))return"audio/midi"; if(x.endsWith(".wma"))return"audio/x-ms-wma";
+        if(x.endsWith(".html")||x.endsWith(".htm"))return"text/html"; if(x.endsWith(".css"))return"text/css"; if(x.endsWith(".js")||x.endsWith(".mjs")||x.endsWith(".cjs"))return"text/javascript"; if(x.endsWith(".java"))return"text/x-java-source"; if(x.endsWith(".json"))return"application/json"; if(x.endsWith(".xml"))return"application/xml"; if(x.endsWith(".md")||x.endsWith(".markdown"))return"text/markdown"; if(x.endsWith(".py"))return"text/x-python"; if(x.endsWith(".c")||x.endsWith(".h"))return"text/x-c"; if(x.endsWith(".cpp")||x.endsWith(".hpp")||x.endsWith(".cc"))return"text/x-c++src"; if(x.endsWith(".sh")||x.endsWith(".bash"))return"text/x-shellscript"; if(x.endsWith(".sql"))return"text/x-sql"; if(x.endsWith(".kt")||x.endsWith(".kts"))return"text/x-kotlin"; if(x.endsWith(".ts")||x.endsWith(".tsx"))return"text/typescript"; if(x.endsWith(".jsx"))return"text/jsx"; if(x.endsWith(".gradle")||x.endsWith(".properties")||x.endsWith(".yaml")||x.endsWith(".yml")||x.endsWith(".log")||x.endsWith(".ini")||x.endsWith(".cfg"))return"text/plain";
         if(x.endsWith(".pdf"))return"application/pdf"; if(x.endsWith(".txt"))return"text/plain"; if(x.endsWith(".csv"))return"text/csv"; if(x.endsWith(".doc"))return"application/msword"; if(x.endsWith(".docx"))return"application/vnd.openxmlformats-officedocument.wordprocessingml.document"; if(x.endsWith(".xls"))return"application/vnd.ms-excel"; if(x.endsWith(".xlsx"))return"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; if(x.endsWith(".ppt"))return"application/vnd.ms-powerpoint"; if(x.endsWith(".pptx"))return"application/vnd.openxmlformats-officedocument.presentationml.presentation";
         return"application/octet-stream";
     }
+    private boolean isEditableTextFile(String name){String x=name==null?"":name.toLowerCase(Locale.ROOT);return x.matches(".*\\.(html?|css|m?js|cjs|java|json|xml|md|markdown|py|c|h|cpp|hpp|cc|sh|bash|sql|kt|kts|ts|tsx|jsx|gradle|properties|ya?ml|log|ini|cfg|txt|csv)$");}
     private boolean isCategory(String c){return Arrays.asList("images","videos","music","documents").contains(c);}
     private boolean categoryAccepts(String c,String name,String mime){
         String m=(mime==null||mime.trim().isEmpty()||"application/octet-stream".equalsIgnoreCase(mime))?getMime(name):mime.toLowerCase(Locale.ROOT);
@@ -185,6 +187,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean shareFile(String path){try{File f=safeRelative(path);if(f==null||!f.isFile()||!f.exists())return false;File temp=createSharedTempCopy(f);if(temp==null)return false;Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp);Intent i=new Intent(Intent.ACTION_SEND);i.setType(getMime(f.getName()));i.putExtra(Intent.EXTRA_STREAM,u);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(i,"Share temporary copy of "+f.getName()));return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean shareFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);ArrayList<Uri> us=new ArrayList<>();String mime="*/*";for(int i=0;i<a.length();i++){File f=safeRelative(a.getString(i));if(f!=null&&f.isFile()&&f.exists()){File temp=createSharedTempCopy(f);if(temp!=null){us.add(FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp));mime=getMime(f.getName());}}}if(us.isEmpty())return false;Intent in=new Intent(Intent.ACTION_SEND_MULTIPLE);in.setType(mime);in.putParcelableArrayListExtra(Intent.EXTRA_STREAM,us);in.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(in,"Share temporary copies"));return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean openFile(String path){try{File f=safeRelative(path);if(f==null||!f.isFile()||!f.exists())return false;File temp=createSharedTempCopy(f);if(temp==null)return false;Uri u=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",temp);Intent i=new Intent(Intent.ACTION_VIEW);i.setDataAndType(u,getMime(f.getName()));i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(Intent.createChooser(i,"Open temporary copy with"));return true;}catch(android.content.ActivityNotFoundException e){return false;}catch(Exception e){return false;}}
+        @JavascriptInterface public String readTextFile(String path){try{File f=safeRelative(path);if(f==null||!f.isFile()||f.length()>2*1024*1024||!isEditableTextFile(f.getName()))return null;byte[] b=new byte[(int)f.length()];try(FileInputStream in=new FileInputStream(f)){int off=0,n;while(off<b.length&&(n=in.read(b,off,b.length-off))>0)off+=n;if(off!=b.length)return null;}return new String(b,"UTF-8");}catch(Exception e){return null;}}
+        @JavascriptInterface public boolean writeTextFile(String path,String content){File temp=null,backup=null;try{File f=safeRelative(path);if(f==null||!f.isFile()||!isEditableTextFile(f.getName())||content==null||content.getBytes("UTF-8").length>2*1024*1024)return false;temp=new File(f.getParentFile(),"."+f.getName()+".edit-"+UUID.randomUUID().toString().substring(0,8));backup=new File(f.getParentFile(),"."+f.getName()+".backup-"+UUID.randomUUID().toString().substring(0,8));try(FileOutputStream out=new FileOutputStream(temp)){out.write(content.getBytes("UTF-8"));out.flush();out.getFD().sync();}if(!temp.isFile())return false;if(!f.renameTo(backup)){temp.delete();return false;}if(!temp.renameTo(f)){backup.renameTo(f);temp.delete();return false;}backup.delete();return true;}catch(Exception e){if(backup!=null&&backup.exists()){File original=safeRelative(path);if(original!=null&&!original.exists())backup.renameTo(original);}if(temp!=null)temp.delete();return false;}}
         @JavascriptInterface public boolean exportFile(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=false;startExportPicker();return true;}
         @JavascriptInterface public boolean exportFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);pendingExportPaths=new String[a.length()];for(int i=0;i<a.length();i++)pendingExportPaths[i]=a.getString(i);pendingExportPath="";pendingDeleteAfterExport=false;startExportPicker();return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean removeToDownloads(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=true;startExportPicker();return true;}
@@ -229,7 +233,32 @@ public class MainActivity extends Activity {
                 }
             });
         }
-        @JavascriptInterface public void openWhatsApp(){runOnUiThread(()->{try{Intent i=new Intent(Intent.ACTION_VIEW,Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello, can you create for me a website. Please")));if(getPackageManager().resolveActivity(i,0)!=null){startActivity(i);webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(true)",null);}else webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(false)",null);}catch(Exception e){webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(false)",null);}});}
+        @JavascriptInterface public void openWhatsApp(){
+            runOnUiThread(()->{
+                Uri uri=Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello Ahmed. can you create for me a website. Please"));
+                boolean launched=false;
+                String[] packages={"com.whatsapp","com.whatsapp.w4b"};
+                for(String packageName:packages){
+                    try{
+                        Intent appIntent=new Intent(Intent.ACTION_VIEW,uri);
+                        appIntent.setPackage(packageName);
+                        startActivity(appIntent);
+                        launched=true;
+                        break;
+                    }catch(android.content.ActivityNotFoundException ignored){}
+                    catch(Exception ignored){}
+                }
+                if(!launched){
+                    try{
+                        Intent fallback=new Intent(Intent.ACTION_VIEW,uri);
+                        startActivity(fallback);
+                        launched=true;
+                    }catch(Exception ignored){}
+                }
+                final boolean ok=launched;
+                webView.post(()->webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult("+ok+")",null));
+            });
+        }
     }
 
     private void seedSampleFiles(){
@@ -299,7 +328,7 @@ public class MainActivity extends Activity {
                     JSONObject.quote(importedFolder)+", "+a+", "+r+", "+f+")",null),150);
             return;
         }
-        if(requestCode==EXPORT_TREE&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null){Uri tree=data.getData();try{getContentResolver().takePersistableUriPermission(tree,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(Exception ignored){}int done=0;for(String p:pendingExportPaths)if(exportOneToTree(tree,p,pendingDeleteAfterExport))done++;final int n=done;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone("+n+","+pendingExportPaths.length+")",null),150);}
+        if(requestCode==EXPORT_TREE){if(resultCode!=RESULT_OK||data==null||data.getData()==null){final int total=pendingExportPaths.length;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone(0,"+total+")",null),100);return;}Uri tree=data.getData();try{getContentResolver().takePersistableUriPermission(tree,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(Exception ignored){}int done=0;for(String p:pendingExportPaths)if(exportOneToTree(tree,p,pendingDeleteAfterExport))done++;final int n=done,total=pendingExportPaths.length;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone("+n+","+total+")",null),150);}
     }
     private boolean copyUri(Uri u,String target,String filter){
         File temp=null;
@@ -338,7 +367,7 @@ public class MainActivity extends Activity {
     }
     private String queryName(Uri u){Cursor c=null;try{c=getContentResolver().query(u,new String[]{OpenableColumns.DISPLAY_NAME},null,null,null);if(c!=null&&c.moveToFirst())return c.getString(0);}catch(Exception ignored){}finally{if(c!=null)c.close();}return null;}
     private boolean tryDeleteSource(Uri u){try{if("content".equalsIgnoreCase(u.getScheme()))return DocumentsContract.deleteDocument(getContentResolver(),u);return false;}catch(Exception e){try{return getContentResolver().delete(u,null,null)>0;}catch(Exception ignored){return false;}}}
-    private boolean exportOneToTree(Uri tree,String path,boolean delete){try{File src=safeRelative(path);if(src==null||!src.isFile())return false;String name=src.getName();Uri doc=DocumentsContract.createDocument(getContentResolver(),tree,getMime(name),name);if(doc==null)return false;try(InputStream in=new FileInputStream(src);OutputStream out=getContentResolver().openOutputStream(doc)){if(out==null)throw new IOException();byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)out.write(b,0,n);}if(delete)src.delete();return true;}catch(Exception e){return false;}}
+    private boolean exportOneToTree(Uri tree,String path,boolean delete){Uri doc=null;try{File src=safeRelative(path);if(src==null||!src.isFile())return false;String name=src.getName();Uri parent=DocumentsContract.buildDocumentUriUsingTree(tree,DocumentsContract.getTreeDocumentId(tree));doc=DocumentsContract.createDocument(getContentResolver(),parent,getMime(name),name);if(doc==null)return false;try(InputStream in=new FileInputStream(src);OutputStream out=getContentResolver().openOutputStream(doc,"w")){if(out==null)throw new IOException("Cannot open export destination");byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)out.write(b,0,n);out.flush();}long copied=0;try(InputStream check=getContentResolver().openInputStream(doc)){if(check==null)throw new IOException("Cannot verify export");byte[] b=new byte[65536];int n;while((n=check.read(b))!=-1)copied+=n;}if(copied!=src.length()){try{DocumentsContract.deleteDocument(getContentResolver(),doc);}catch(Exception ignored){}return false;}if(delete&&!src.delete())return false;return true;}catch(Exception e){if(doc!=null)try{DocumentsContract.deleteDocument(getContentResolver(),doc);}catch(Exception ignored){}return false;}}
     private boolean deleteRecursively(File f){if(f.isDirectory()){File[] x=f.listFiles();if(x!=null)for(File q:x)if(!deleteRecursively(q))return false;}return f.delete();}
     private void copyStream(InputStream in,OutputStream out)throws IOException{try(InputStream a=in;OutputStream b=out){byte[] buf=new byte[65536];int n;while((n=a.read(buf))!=-1)b.write(buf,0,n);}}
 }

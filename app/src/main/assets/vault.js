@@ -1,7 +1,7 @@
 /* Folder Locker v3: one native vault shared by every page. */
 const CATEGORY_RULES={images:{label:'Images',icon:'🖼️',accept:'image/*'},videos:{label:'Videos',icon:'🎬',accept:'video/*'},music:{label:'Music',icon:'🎵',accept:'audio/*'},documents:{label:'Documents',icon:'📄',accept:'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv'}};
 function isNative(){return !!window.AndroidVault;}
-function mimeFor(n){let x=(n||'').toLowerCase();if(/\.(jpg|jpeg|png|gif|webp|bmp|heic|heif|avif|tif|tiff)$/.test(x))return'image/*';if(/\.(mp4|mov|mkv|webm|3gp|avi|mpeg|mpg|m4v)$/.test(x))return'video/*';if(/\.(mp3|wav|m4a|ogg|aac|flac|mid|midi|opus|wma)$/.test(x))return'audio/*';return'application/octet-stream';}
+function mimeFor(n){let x=(n||'').toLowerCase();if(/\.(jpg|jpeg|png|gif|webp|bmp|heic|heif|avif|tif|tiff)$/.test(x))return'image/*';if(/\.(mp4|mov|mkv|webm|3gp|avi|mpeg|mpg|m4v)$/.test(x))return'video/*';if(/\.(mp3|wav|m4a|ogg|aac|flac|mid|midi|opus|wma)$/.test(x))return'audio/*';if(/\.(html?|css|m?js|cjs|java|json|xml|md|markdown|py|c|h|cpp|hpp|cc|sh|bash|sql|kt|kts|ts|tsx|jsx|gradle|properties|ya?ml|log|ini|cfg|txt|csv)$/.test(x))return'text/plain';if(/\.pdf$/.test(x))return'application/pdf';return'application/octet-stream';}
 function listVault(c){if(isNative()){try{return JSON.parse(AndroidVault.listFiles(c)||'[]')}catch(e){return[]}}return[];}
 function listTree(){if(isNative()){try{return JSON.parse(AndroidVault.listTree()||'[]')}catch(e){return[]}}return[];}
 function pickVault(folder=''){if(isNative()){AndroidVault.pickFiles(folder);return;}document.getElementById('nativePicker')?.click();}
