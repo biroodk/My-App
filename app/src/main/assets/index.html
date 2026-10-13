@@ -373,16 +373,20 @@ updateBioStatus();
 
 function showPopup(t,m){const title=document.getElementById('pTitle'),msg=document.getElementById('pMsg'),popup=document.getElementById('popup');if(!title||!msg||!popup)return;title.textContent=t;msg.textContent=m;popup.classList.add('show')}
 function closePopup(){document.getElementById('popup')?.classList.remove('show')}
-window.onWhatsAppResult=function(ok){if(!ok)showPopup('WhatsApp Unavailable','WhatsApp could not be opened. Please install WhatsApp or check your internet connection, then try again. 🥺');};
+window.onWhatsAppResult=function(result){
+ if(result===true)return;
+ if(result==='offline'||!navigator.onLine){showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');return;}
+ showPopup('WhatsApp Unavailable','WhatsApp could not be opened. Please install WhatsApp or try again. 🥺');
+};
 function openWhatsApp(){
  const url='https://wa.me/256709387311?text='+encodeURIComponent('Hello Ahmed. can you create for me a website. Please');
- // On Android, try the native WhatsApp app even if the phone is currently offline.
+ // Fail fast when the browser reports offline; Android also performs a real network check.
+ if(!navigator.onLine){showPopup('No Internet Connection','Access denied. 🥺🥺🥺 Check your internet and try again');return;}
  if(window.AndroidVault&&typeof AndroidVault.openWhatsApp==='function'){
   try{AndroidVault.openWhatsApp();}catch(e){showPopup('WhatsApp Unavailable','WhatsApp could not be opened. Please try again. 🥺');}
   return;
  }
- if(!navigator.onLine){showPopup('No Internet Connection','Check your internet connection and try again. 🥺');return;}
- try{window.location.href=url;}catch(e){showPopup('WhatsApp Unavailable','Unable to open WhatsApp. Please try again. 🥺');}
+ try{window.open(url,'_blank');}catch(e){showPopup('WhatsApp Unavailable','Unable to open WhatsApp. Please try again. 🥺');}
 }
 
 </script>

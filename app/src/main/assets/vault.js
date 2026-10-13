@@ -8,7 +8,11 @@ function pickVault(folder=''){if(isNative()){AndroidVault.pickFiles(folder);retu
 function createVaultFolder(parent,name){return isNative()?AndroidVault.createFolder(parent||'',name):false;}
 function deleteVault(path){return isNative()?AndroidVault.deleteFile(path):false;}
 function deleteVaultFolder(path){return isNative()?AndroidVault.deleteFolder(path):false;}
+function fileExtension(name){name=String(name||'');const i=name.lastIndexOf('.');return i>0?name.slice(i):'';}
+function fileNameStem(name){name=String(name||'');const ext=fileExtension(name);return ext?name.slice(0,-ext.length):name;}
+function appendOriginalFileExtension(originalName,proposedName){const ext=fileExtension(originalName);let stem=String(proposedName||'').trim();if(ext&&stem.toLowerCase().endsWith(ext.toLowerCase()))stem=stem.slice(0,-ext.length);return stem+ext;}
 function renameVault(path,newName){return isNative()?AndroidVault.renameFile(path,newName):false;}
+function renameVaultFilePreservingExtension(path,originalName,proposedName){return isNative()?AndroidVault.renameFile(path,appendOriginalFileExtension(originalName,proposedName)):false;}
 function renameFolder(path,newName){return isNative()?AndroidVault.renameFolder(path,newName):false;}
 function copyVault(path,target){return isNative()?AndroidVault.copyFile(path,target):false;}
 function moveVault(path,target){return isNative()?AndroidVault.moveFile(path,target):false;}

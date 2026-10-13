@@ -5,6 +5,9 @@ import android.content.*;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.*;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -180,7 +183,22 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean createFolder(String parent,String name){if(name==null||name.trim().isEmpty())return false;File p=folderDir(parent);if(p==null)return false;File d=new File(p,cleanName(name));return !d.exists()&&d.mkdirs();}
         @JavascriptInterface public boolean deleteFile(String path){File f=safeRelative(path);return f!=null&&f.isFile()&&f.delete();}
         @JavascriptInterface public boolean deleteFolder(String path){File f=safeRelative(path);return f!=null&&f.isDirectory()&&deleteRecursively(f);}
-        @JavascriptInterface public boolean renameFile(String oldPath,String newName){File a=safeRelative(oldPath);if(a==null||!a.isFile()||newName==null||newName.trim().isEmpty())return false;File b=new File(a.getParentFile(),cleanName(newName));return !b.exists()&&a.renameTo(b);}
+        @JavascriptInterface public boolean renameFile(String oldPath,String newName){
+            File a=safeRelative(oldPath);
+            if(a==null||!a.isFile()||newName==null||newName.trim().isEmpty())return false;
+            String original=a.getName();
+            int oldDot=original.lastIndexOf('.');
+            String ext=oldDot>0?original.substring(oldDot):"";
+            String requested=cleanName(newName);
+            if(ext.length()>0){
+                int newDot=requested.lastIndexOf('.');
+                if(newDot>0)requested=requested.substring(0,newDot);
+                requested=cleanName(requested)+ext;
+            }
+            if(requested.isEmpty()||requested.equals(original))return requested.equals(original);
+            File b=new File(a.getParentFile(),requested);
+            return !b.exists()&&a.renameTo(b);
+        }
         @JavascriptInterface public boolean renameFolder(String oldPath,String newName){File a=safeRelative(oldPath);if(a==null||!a.isDirectory()||newName==null||newName.trim().isEmpty())return false;File b=new File(a.getParentFile(),cleanName(newName));return !b.exists()&&a.renameTo(b);}
         @JavascriptInterface public boolean copyFile(String path,String targetFolder){try{File s=safeRelative(path),d0=folderDir(targetFolder);if(s==null||!s.isFile()||d0==null)return false;File d=new File(d0,uniqueName(d0,s.getName()));copyStream(new FileInputStream(s),new FileOutputStream(d));return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean moveFile(String path,String targetFolder){try{File s=safeRelative(path),d0=folderDir(targetFolder);if(s==null||!s.isFile()||d0==null)return false;if(s.getParentFile()!=null && s.getParentFile().equals(d0))return true;File d=new File(d0,uniqueName(d0,s.getName()));copyStream(new FileInputStream(s),new FileOutputStream(d));return s.delete();}catch(Exception e){return false;}}
@@ -235,6 +253,10 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public void openWhatsApp(){
             runOnUiThread(()->{
+                if(!hasValidatedInternetConnection()){
+                    webView.post(()->webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult('offline')",null));
+                    return;
+                }
                 Uri uri=Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello Ahmed. can you create for me a website. Please"));
                 boolean launched=false;
                 String[] packages={"com.whatsapp","com.whatsapp.w4b"};
@@ -259,6 +281,19 @@ public class MainActivity extends Activity {
                 webView.post(()->webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult("+ok+")",null));
             });
         }
+    }
+
+    private boolean hasValidatedInternetConnection(){
+        try{
+            ConnectivityManager cm=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
+            if(cm==null)return false;
+            Network active=cm.getActiveNetwork();
+            if(active==null)return false;
+            NetworkCapabilities caps=cm.getNetworkCapabilities(active);
+            return caps!=null
+                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        }catch(Exception e){return false;}
     }
 
     private void seedSampleFiles(){
