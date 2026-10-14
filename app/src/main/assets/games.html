@@ -143,7 +143,7 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
 if(typeof requireUnlock==='function' && !requireUnlock()) throw new Error('locked');
 function closePopup(){document.getElementById('popup').classList.remove('show')}
 // Replace this value with the real Netlify URL after the install page is deployed.
-const FOLDER_LOCKER_INSTALL_URL='https://YOUR-NETLIFY-SITE.netlify.app/';
+const FOLDER_LOCKER_INSTALL_URL='https://my-first-app-v1.netlify.app/';
 function shareFolderLocker(event){if(event)event.preventDefault();if(FOLDER_LOCKER_INSTALL_URL.includes('YOUR-NETLIFY-SITE')){document.getElementById('pTitle').textContent='Install page not connected yet';document.getElementById('pMsg').textContent='Deploy the install-page folder to Netlify, then replace FOLDER_LOCKER_INSTALL_URL in games.html with your real Netlify URL.';document.getElementById('popup').classList.add('show');return;}const message='Install or update Folder Locker: '+FOLDER_LOCKER_INSTALL_URL;if(window.AndroidVault&&typeof AndroidVault.shareText==='function'){AndroidVault.shareText(message);return;}if(navigator.share){navigator.share({title:'Folder Locker',text:message,url:FOLDER_LOCKER_INSTALL_URL}).catch(()=>{});return;}if(navigator.clipboard){navigator.clipboard.writeText(message).then(()=>{document.getElementById('pTitle').textContent='Link copied';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')}).catch(()=>{document.getElementById('pTitle').textContent='Share Folder Locker';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')});}}
 
     /*Auto close alert box*/
