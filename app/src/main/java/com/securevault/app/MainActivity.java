@@ -264,10 +264,6 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public void openWhatsApp(){
             runOnUiThread(()->{
-                if(!hasValidatedInternetConnection()){
-                    webView.post(()->webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult('offline')",null));
-                    return;
-                }
                 Uri uri=Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello Ahmed. can you create for me a website. Please"));
                 boolean launched=false;
                 String[] packages={"com.whatsapp","com.whatsapp.w4b"};
