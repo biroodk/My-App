@@ -9,28 +9,47 @@
 <link rel="icon" type="image/png" href="/icon.png">
 <style>
 :root{color-scheme:dark;--bg:#020a1e;--cyan:#1ce3ff;--blue:#0f8cff;--muted:#8aa0c8;--panel:#071532}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 0%,rgba(15,140,255,.24),transparent 45%),radial-gradient(ellipse at 90% 30%,rgba(28,227,255,.12),transparent 40%),var(--bg);color:#eef8ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:22px 14px 36px}
-main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-radius:26px;padding:22px;background:linear-gradient(145deg,rgba(7,21,50,.96),rgba(2,10,30,.97));box-shadow:0 0 26px rgba(28,227,255,.13),inset 0 0 25px rgba(15,140,255,.08)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background: #000095;color:#eef8ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:22px 14px 36px}
+main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-radius:26px;padding:22px;background:linear-gradient(145deg,rgba(7,21,50,.96),rgba(2,10,30,.97));box-shadow:0 0 26px rgba(28,227,255,1),0 0 26px rgba(28,227,255,1),0 0 25px rgba(15,140,255,.08)}
 .brand{display:flex;align-items:center;gap:14px}.brand img{width:76px;height:76px;object-fit:cover;border-radius:20px;border:1px solid var(--cyan);box-shadow:0 0 22px rgba(28,227,255,.28)}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:11px}.brand h1{font-size:26px;line-height:1.1;margin:5px 0}.brand p{margin:0;color:var(--muted);font-size:12px}
 .hero{margin:24px 0 18px;text-align:center}.hero h2{font-size:25px;margin:0 0 9px;color:var(--cyan);text-shadow:0 0 14px rgba(28,227,255,.3)}.hero p{color:#b9cbed;line-height:1.6;font-size:14px;margin:0}
 .pills{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:17px 0}.pill{border:1px solid rgba(28,227,255,.25);background:rgba(28,227,255,.07);border-radius:999px;padding:7px 11px;color:#cdeeff;font-size:11px}
 .install{display:block;width:100%;border:0;border-radius:15px;padding:16px 18px;margin-top:10px;background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;font-size:16px;font-weight:900;text-align:center;text-decoration:none;box-shadow:0 0 22px rgba(15,140,255,.28);cursor:pointer}.install:disabled{opacity:.6}.secondary{display:block;width:100%;border:1px solid rgba(28,227,255,.35);border-radius:13px;padding:12px;margin-top:10px;background:rgba(28,227,255,.06);color:#dff8ff;text-decoration:none;text-align:center;font-weight:700}
 .status{min-height:42px;padding:11px 12px;margin-top:14px;border:1px solid rgba(28,227,255,.22);border-radius:12px;color:var(--muted);font-size:12px;line-height:1.5;background:rgba(0,0,0,.16)}.status strong{color:var(--cyan)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.stat{border:1px solid rgba(28,227,255,.2);border-radius:14px;padding:14px;text-align:center;background:rgba(0,0,0,.16)}.stat .number{display:block;font-size:24px;font-weight:900;color:var(--cyan);font-variant-numeric:tabular-nums}.stat .label{display:block;font-size:11px;color:var(--muted);margin-top:3px}
-.info{margin-top:18px;padding:14px;border-radius:14px;background:rgba(15,140,255,.07);border:1px solid rgba(15,140,255,.24);font-size:12px;line-height:1.65;color:#bfd0ed}.info b{color:#e9faff}.warning{color:#ffd98a}.footer{text-align:center;color:#62769d;font-size:10px;margin:15px 0 0;line-height:1.6}.error{color:#ffadad}
+.info{margin-top:18px;padding:14px;border-radius:14px;background:rgba(15,140,255,.07);border:1px solid rgba(15,140,255,.24);font-size:12px;line-height:1.65;color:#bfd0ed}.info b{color:#e9faff}.warning{color:#ffd98a}.footer{text-align:center;color:#00ffff;font-size:10px;margin:15px 0 0;line-height:1.6}.error{color:#ffadad}
+/* Download guidance dialog */
+.download-overlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,5,18,.86);backdrop-filter:blur(9px)}.download-overlay.open{display:flex}.download-dialog{width:min(100%,440px);padding:22px;border:1px solid rgba(28,227,255,.65);border-radius:22px;background:linear-gradient(145deg,#071532,#020a1e);box-shadow:0 0 35px rgba(28,227,255,.22)}.download-dialog h2{margin:0 0 9px;color:var(--cyan);font-size:22px}.download-dialog p,.download-dialog li{color:#c5d7f5;font-size:14px;line-height:1.6}.download-dialog ol{padding-left:22px}.download-spinner{width:44px;height:44px;margin:14px auto;border:4px solid rgba(28,227,255,.18);border-top-color:var(--cyan);border-radius:50%;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.dialog-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}.dialog-actions button{font:inherit;cursor:pointer}.download-note{font-size:11px!important;color:#8aa0c8!important}.install-next{display:none;margin-top:14px;padding:12px;border-radius:12px;border:1px solid rgba(28,227,255,.28);background:rgba(28,227,255,.06)}
 </style>
 </head>
 <body><main><div class="frame">
-<header class="brand"><img src="/icon.png" alt="Folder Locker app icon"><div><div class="eyebrow">Private Vault • Android</div><h1>Folder <span style="color:var(--cyan)">Locker</span></h1><p>Designed by AHMED K SanShania</p></div></header>
+<header class="brand"><img src="/icon.png" alt="Folder Locker app icon"><div><div class="eyebrow">Private Vault • Android</div><h1>Folder <span style="color:var(--cyan)">Locker</span></h1><p style="font-weight: bold;">Designed by <span style="color: #f0f; text-shadow:0 3px 0 rgba(0,255,255, 0.5);">AHMED K SanShania</span></p></div></header>
 <section class="hero"><h2>Keep your files in your control.</h2><p>Install or update Folder Locker from one trusted link. Keep this page bookmarked to get the newest published build.</p></section>
 <div class="pills"><span class="pill">🔐 Private vault</span><span class="pill">⚡ Neon interface</span><span class="pill">📱 Android app</span></div>
 <a class="install" id="installButton" href="https://github.com/biroodk/My-App/releases/latest/download/Folder-Locker.apk">Install Folder Locker</a>
 <button class="secondary" id="confirmInstalled" type="button" style="display:none">I installed it successfully</button>
-
+<a class="secondary" id="releaseLink" href="index.html" target="_blank" rel="noopener">View release details</a>
 <div class="status" id="status" role="status" aria-live="polite">Checking the latest version…</div>
 <div class="stats"><div class="stat"><span class="number" id="visits">—</span><span class="label">Number of Visits</span></div><div class="stat"><span class="number" id="downloads">—</span><span class="label">APK downloads reported by GitHub</span></div></div>
 <div class="info"><b>How installation works</b><br>1. Tap Install or Update.<br>2. Android downloads the APK and may ask you to allow this browser to install unknown apps.<br>3. Open the downloaded APK and approve the installation/update.<br><br><span class="warning">Android does not allow a webpage to silently install a native APK. This page cannot independently verify that Android completed installation, so it will not falsely claim “Installed”.</span></div>
 <div class="info"><b>Update notice</b><br><span id="updateMessage">This page checks the latest published release automatically.</span> If you have an older build, install the newer APK and approve the Android update prompt. Keep the same existing app installed so your vault data is not intentionally removed.</div>
-<div class="footer">Folder Locker • SecureVault • The latest APK is published through GitHub Releases.<br>Visit counts are browser-based and may be approximate during simultaneous visits.</div>
+<div class="footer">Folder Locker • SecureVault • The latest APP Version can be published <span style="color: lime;">OR</span> Released any time "T".</div>
+<div class="download-overlay" id="downloadOverlay" role="dialog" aria-modal="true" aria-labelledby="downloadTitle">
+ <div class="download-dialog">
+  <h2 id="downloadTitle">Preparing your download</h2>
+  <div class="download-spinner" id="downloadSpinner" aria-hidden="true"></div>
+  <p id="downloadDialogMessage">Your browser is opening the official Folder Locker APK download. Keep this page open while your phone downloads the file.</p>
+  <div class="install-next" id="installNext">
+   <b style="color:var(--cyan)">When the download finishes</b>
+   <ol><li>Open your browser's Downloads list or your phone's Files app.</li><li>Tap <b>Folder-Locker.apk</b> (or the downloaded APK filename).</li><li>If prompted, allow this browser to install unknown apps, then return to the installer and tap <b>Install</b> or <b>Update</b>.</li><li>Wait for Android to finish, then tap <b>Done</b> or <b>Open</b>.</li></ol>
+  </div>
+  <p class="download-note">For your security, Android requires you to approve installation. This webpage cannot install the APK itself or reliably detect whether a browser download completed or was cancelled.</p>
+  <div class="dialog-actions">
+   <button class="install" id="showInstallSteps" type="button">Show installation steps</button>
+   <button class="secondary" id="closeDownloadDialog" type="button">Keep this page open</button>
+   <a class="secondary" id="openDownloadsHelp" href="https://support.google.com/chrome/answer/95759" target="_blank" rel="noopener">How to find downloads</a>
+  </div>
+ </div>
+</div>
 </div></main>
 <script>
 (() => {
@@ -46,7 +65,19 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  async function loadVisits(){try{const r=await fetch('/api/stats?visitorId='+encodeURIComponent(visitorId()),{cache:'no-store'});if(!r.ok)throw new Error('stats');const d=await r.json();$('visits').textContent=fmt(d.visits)}catch(e){$('visits').textContent='—'}}
  async function loadRelease(){try{const r=await fetch(API,{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});if(!r.ok)throw new Error('release');const release=await r.json();currentVersion=release.name||release.tag_name||release.published_at||'latest';$('releaseLink').href=release.html_url||'https://github.com/biroodk/My-App/releases/latest';const asset=(release.assets||[]).find(a=>a.name==='Folder-Locker.apk');$('downloads').textContent=asset?fmt(asset.download_count):'—';const last=localStorage.getItem(KEY);const installed=localStorage.getItem(INSTALLED_KEY);const isUpdate=installed?installed!==currentVersion:!!(last&&last!==currentVersion);const isConfirmedInstalled=installed===currentVersion;$('installButton').textContent=isUpdate?'Update Folder Locker':(isConfirmedInstalled?'Installed ✓':'Install Folder Locker');$('installButton').setAttribute('aria-label',isUpdate?'Update Folder Locker':(isConfirmedInstalled?'Installed':'Install Folder Locker'));$('installButton').href=asset&&asset.browser_download_url?asset.browser_download_url:APK;$('confirmInstalled').style.display=(last===currentVersion&&!isConfirmedInstalled)?'block':'none';$('confirmInstalled').textContent='I installed it successfully';$('updateMessage').textContent=isUpdate?'This app was upgraded new version is available update for the latest version':'The page checks the latest published release automatically.';setStatus('<strong>Latest release:</strong> '+String(currentVersion).replace(/[<>&]/g,'' )+' • '+(release.published_at?new Date(release.published_at).toLocaleDateString():'latest build'));
  if(isConfirmedInstalled){$('installButton').removeAttribute('href');$('installButton').style.pointerEvents='none';$('installButton').style.opacity='.8'}else{$('installButton').style.pointerEvents='auto';$('installButton').style.opacity='1'}}catch(e){$('downloads').textContent='—';$('installButton').href=APK;setStatus('Could not check the release right now. You can still open the latest APK link or try again later.',true)}}
- $('installButton').addEventListener('click',()=>{if(currentVersion){try{localStorage.setItem(KEY,currentVersion);localStorage.removeItem(INSTALLED_KEY)}catch(e){}$('confirmInstalled').style.display='block';$('installButton').textContent='Download started';$('installButton').style.pointerEvents='auto';setStatus('<strong>Download requested.</strong> When Android finishes downloading, open the APK and approve installation. Return to this page and confirm installation below if it succeeded.')} });
+ const overlay=$('downloadOverlay');
+ function openDownloadGuide(){
+   overlay.classList.add('open');
+   $('downloadTitle').textContent='APK download requested';
+   $('downloadDialogMessage').textContent='Your browser should now handle the official APK download. Check the browser download notification/list for progress; keep this page open so the next steps are ready.';
+   $('installNext').style.display='none';
+   $('showInstallSteps').textContent='Show installation steps';
+   setStatus('<strong>Download requested.</strong> Check your browser notification or Downloads list. When the APK is fully downloaded, open it and approve installation in Android.');
+ }
+ $('installButton').addEventListener('click',()=>{if(currentVersion){try{localStorage.setItem(KEY,currentVersion);localStorage.removeItem(INSTALLED_KEY)}catch(e){}$('confirmInstalled').style.display='block';$('installButton').textContent='Download requested';openDownloadGuide();} });
+ $('showInstallSteps').addEventListener('click',()=>{const panel=$('installNext');const show=panel.style.display!=='block';panel.style.display=show?'block':'none';$('showInstallSteps').textContent=show?'Hide installation steps':'Show installation steps';if(show){$('downloadTitle').textContent='Install Folder Locker';$('downloadSpinner').style.display='none';}});
+ $('closeDownloadDialog').addEventListener('click',()=>overlay.classList.remove('open'));
+ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open')});
  $('confirmInstalled').addEventListener('click',()=>{if(!currentVersion)return;try{localStorage.setItem(INSTALLED_KEY,currentVersion);localStorage.setItem(KEY,currentVersion)}catch(e){}$('installButton').textContent='Installed ✓';$('installButton').removeAttribute('href');$('installButton').style.pointerEvents='none';$('installButton').style.opacity='.8';$('confirmInstalled').style.display='none';$('updateMessage').textContent='Installed version confirmed by you. This page will offer Update when a newer release is published.';setStatus('<strong>Installed ✓</strong> You confirmed that Android completed the installation. The webpage cannot verify this automatically.')} );
  loadVisits();loadRelease();
 })();
