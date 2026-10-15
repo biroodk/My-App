@@ -20,5 +20,3 @@
 - The unique visit count uses a random ID stored in each browser's local storage and counts it once per 24 hours. Clearing browser data or using another browser/device may count as a new visitor. Concurrent hits may make the simple aggregate counter approximate.
 - A Netlify site must be connected to the GitHub repository before the public page and stats endpoint work. This package does not deploy to your Netlify account automatically.
 
-## `sound4.mp3`
-The file was not present in the source ZIP or available in this workspace. Copy it from your phone's Downloads folder into `app/src/main/assets/sound4.mp3` before committing if you want it included in the APK. Do not create an empty placeholder because that would not be playable audio.
