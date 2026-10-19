@@ -42,7 +42,6 @@ async function db(path, { method = 'GET', body, prefer, count = false } = {}) {
   const url = path instanceof URL ? path : new URL(`${DB_URL}/rest/v1/${path}`);
   const requestHeaders = {
     apikey: SERVICE_KEY,
-    authorization: `Bearer ${SERVICE_KEY}`,
     accept: 'application/json'
   };
   if (body !== undefined) requestHeaders['content-type'] = 'application/json';
@@ -103,7 +102,7 @@ async function createAvatarUpload(user, body) {
   const encodedPath = path.split('/').map(encodeURIComponent).join('/');
   const response = await fetch(`${DB_URL}/storage/v1/object/upload/sign/${AVATAR_BUCKET}/${encodedPath}`, {
     method: 'POST',
-    headers: { apikey: SERVICE_KEY, authorization: `Bearer ${SERVICE_KEY}`, 'content-type': 'application/json' },
+    headers: { apikey: SERVICE_KEY, 'content-type': 'application/json' },
     body: JSON.stringify({})
   });
   const result = await response.json().catch(() => ({}));
