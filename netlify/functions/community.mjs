@@ -227,7 +227,7 @@ export default async function handler(request) {
     }
     if (action === 'register') {
       if (!/^[A-Za-z0-9_]{3,24}$/.test(username)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
-      if (typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 128) return reply({ error: 'Password must be 8–128 characters.' }, 400);
+      if (typeof body.password !== 'string' || body.password.length < 4 || body.password.length > 128) return reply({ error: 'Password must be 4–128 characters.' }, 400);
       const pass = passwordHash(body.password);
       let inserted;
       try {
