@@ -260,7 +260,10 @@ document.getElementById('pOk').onclick=()=>closeAnimPopup(true);document.getElem
 function updateDots(){document.querySelectorAll('.screen').forEach((screen,idx)=>{const dots=screen.querySelectorAll('.dots span');dots.forEach((dot,i)=>dot.classList.toggle('active',i===Math.min(idx,dots.length-1)));});}
 function targetStep(dir){let n=cur+dir;if(n<1)n=1;if(n>total)n=total;if(!firstInstall&&n===4)n=dir>0?5:3;return n}
 
-function go(dir){
+async function go(dir){
+  // The forward arrow on the password screen must use the same validated
+  // registration path as the Create Secure Vault button.
+  if(cur===4 && dir>0){await createVault();return;}
   let next=targetStep(dir);
   if(next===cur)return;
 
@@ -285,7 +288,11 @@ function createStars(){const c=document.getElementById('stars');for(let i=0;i<45
 function toggleEye(id,el){const inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';el.textContent='🙈'}else{inp.type='password';el.textContent='👁️'}}
 const volume=document.querySelector('.volume');if(volume){volume.value=60;volume.addEventListener('input',()=>{const m=document.getElementById('bg-music');m.volume=Number(volume.value)/100})}
 if(window.AndroidVault&&AndroidVault.isSessionUnlocked&&AndroidVault.isSessionUnlocked())location.replace('index.html');
-document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('s1').classList.add('active');cur=1;updateDots();
+const loginRouteRequested=location.hash==='#login' && !firstInstall;
+document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+if(loginRouteRequested){document.getElementById('s6').classList.add('active');cur=6;}
+else{document.getElementById('s1').classList.add('active');cur=1;}
+updateDots();
 </script>
 </body>
 </html>

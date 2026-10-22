@@ -149,6 +149,11 @@ background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:
         <div class="text"><b>Device Credential</b><span id="dcStatus">Use device PIN / Pattern / Password</span></div>
         <div class="switch" id="dcSwitch"></div>
       </div>
+      <div class="row" onclick="toggleUninstallProtection()">
+        <div class="icon">🛡️</div>
+        <div class="text"><b>Uninstall Protection</b><span id="uninstallProtectionText">Off — optional device administrator protection</span></div>
+        <div class="switch" id="uninstallProtectionSwitch"></div>
+      </div>
     </div>
 </div>
     <div class="section-title">Appearance</div>
@@ -200,8 +205,11 @@ background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:
     <div class="sheet-opt" data-val="immediately" onclick="setAutoLock('immediately')"><div class="icon">⚡</div><div class="text"><b>Immediately</b><span>Lock instantly when app closes</span></div><div class="check">✓</div></div>
     <div class="sheet-opt" data-val="1min" onclick="setAutoLock('1min')"><div class="icon">⏱️</div><div class="text"><b>After 1 minute</b><span>Recommended for privacy</span></div><div class="check">✓</div></div>
     <div class="sheet-opt" data-val="5min" onclick="setAutoLock('5min')"><div class="icon">🕒</div><div class="text"><b>After 5 minutes</b><span>Default - balanced</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="10min" onclick="setAutoLock('10min')"><div class="icon">⏱️</div><div class="text"><b>After 10 minutes</b><span>Lock after a short break</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="15min" onclick="setAutoLock('15min')"><div class="icon">🕑</div><div class="text"><b>After 15 minutes</b><span>More time before locking</span></div><div class="check">✓</div></div>
     <div class="sheet-opt" data-val="30min" onclick="setAutoLock('30min')"><div class="icon">⏰</div><div class="text"><b>After 30 minutes</b><span>Less secure but convenient</span></div><div class="check">✓</div></div>
     <div class="sheet-opt" data-val="1hour" onclick="setAutoLock('1hour')"><div class="icon">🕐</div><div class="text"><b>After 1 hour</b><span>Stay unlocked longer</span></div><div class="check">✓</div></div>
+    <div class="sheet-opt" data-val="8hour" onclick="setAutoLock('8hour')"><div class="icon">🌙</div><div class="text"><b>After 8 hours</b><span>Long session - less secure</span></div><div class="check">✓</div></div>
     <div class="sheet-opt" data-val="never" onclick="setAutoLock('never')"><div class="icon">🔓</div><div class="text"><b>Never</b><span>Keep vault unlocked - not recommended</span></div><div class="check">✓</div></div>
   </div>
 </div>
@@ -212,7 +220,7 @@ background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:
 <script src="vault.js"></script><script>
 if(!requireUnlock())throw new Error('locked');
 // Save toggle states
-document.querySelectorAll('.switch').forEach((sw,i)=>{
+document.querySelectorAll('.switch:not(#uninstallProtectionSwitch)').forEach((sw,i)=>{
   let saved=localStorage.getItem('setting_toggle_'+i);
   if(saved==='on') sw.classList.add('on');
   if(saved==='off') sw.classList.remove('on');
@@ -234,45 +242,81 @@ function openLoginInfo(){loginInfoModal.classList.add('show')}function closeLogi
 function saveLoginInfo(){let o=loginOld.value,n=loginNew.value,c=loginConfirm.value;if(!AndroidVault.verifyPassword(o)){showPopup('❌','Wrong Password','Current password is incorrect.');return}if(n.length<4){showPopup('⚠️','Weak Password','Minimum 4 characters.');return}if(n!==c){showPopup('❌','Mismatch','New passwords do not match.');return}if(AndroidVault.setPassword(n)){closeLoginInfo();showPopup('✅','Login Updated','Your new password will be required at the next login.')}else showPopup('❌','Security Error','Password could not be saved.')}
 function clearCache(){sessionStorage.clear();showPopup('🧹','Cleared','Cache cleared successfully ✅');}
 
-/* === ADDED ONLY - WhatsApp Style AutoLock Logic === */
+/* Native-backed Auto-Lock: the selected duration is enforced by MainActivity when returning from background. */
+const autoLockLabels={
+  'immediately':'Lock immediately',
+  '1min':'Lock after 1 minute',
+  '5min':'Lock after 5 minutes',
+  '10min':'Lock after 10 minutes',
+  '15min':'Lock after 15 minutes',
+  '30min':'Lock after 30 minutes',
+  '1hour':'Lock after 1 hour',
+  '8hour':'Lock after 8 hours',
+  'never':'Never auto-lock'
+};
+function getAutoLockValue(){
+  let nativeValue='';
+  try{if(window.AndroidVault&&AndroidVault.getAutoLock)nativeValue=AndroidVault.getAutoLock()||'';}catch(e){}
+  if(nativeValue&&autoLockLabels[nativeValue])return nativeValue;
+  let localValue=localStorage.getItem('autoLock')||'5min';
+  if(!autoLockLabels[localValue])localValue='5min';
+  try{if(window.AndroidVault&&AndroidVault.setAutoLock)AndroidVault.setAutoLock(localValue);}catch(e){}
+  return localValue;
+}
 function openAutoLock(){
   document.getElementById('autoLockSheet').classList.add('show');
-  let current = localStorage.getItem('autoLock') || '5min';
-  document.querySelectorAll('.sheet-opt').forEach(opt=>{
-    opt.classList.toggle('active', opt.dataset.val===current);
-  });
+  let current=getAutoLockValue();
+  document.querySelectorAll('.sheet-opt').forEach(opt=>opt.classList.toggle('active',opt.dataset.val===current));
 }
-function closeAutoLock(){ document.getElementById('autoLockSheet').classList.remove('show'); }
+function closeAutoLock(){document.getElementById('autoLockSheet').classList.remove('show');}
 function setAutoLock(val){
-  localStorage.setItem('autoLock', val);
-  let map={
-    'immediately':'Lock immediately',
-    '1min':'Lock after 1 minute',
-    '5min':'Lock after 5 minutes',
-    '30min':'Lock after 30 minutes',
-    '1hour':'Lock after 1 hour',
-    'never':'Never auto-lock'
-  };
-  document.getElementById('autoLockText').textContent = map[val];
-  document.querySelectorAll('.sheet-opt').forEach(opt=>{
-    opt.classList.toggle('active', opt.dataset.val===val);
-  });
+  if(!autoLockLabels[val])return;
+  try{
+    if(window.AndroidVault&&AndroidVault.setAutoLock&&!AndroidVault.setAutoLock(val)){
+      showPopup('⚠️','Auto-Lock','The new session setting could not be saved.');return;
+    }
+  }catch(e){showPopup('⚠️','Auto-Lock','The new session setting could not be saved.');return;}
+  localStorage.setItem('autoLock',val);
+  document.getElementById('autoLockText').textContent=autoLockLabels[val];
+  document.querySelectorAll('.sheet-opt').forEach(opt=>opt.classList.toggle('active',opt.dataset.val===val));
   setTimeout(closeAutoLock,250);
-  showPopup('🕒','Auto-Lock', map[val]+' - saved');
+  showPopup('🕒','Auto-Lock',autoLockLabels[val]+' — saved');
 }
-// Load saved on start
 (function(){
-  let saved = localStorage.getItem('autoLock') || '5min';
-  let map={
-    'immediately':'Lock immediately',
-    '1min':'Lock after 1 minute',
-    '5min':'Lock after 5 minutes',
-    '30min':'Lock after 30 minutes',
-    '1hour':'Lock after 1 hour',
-    'never':'Never auto-lock'
-  };
-  document.getElementById('autoLockText').textContent = map[saved];
+  let saved=getAutoLockValue();
+  document.getElementById('autoLockText').textContent=autoLockLabels[saved];
+  document.querySelectorAll('.sheet-opt').forEach(opt=>opt.classList.toggle('active',opt.dataset.val===saved));
 })();
+
+function updateUninstallProtection(){
+  let enabled=false;
+  try{enabled=!!(window.AndroidVault&&AndroidVault.isUninstallProtectionEnabled&&AndroidVault.isUninstallProtectionEnabled());}catch(e){}
+  const sw=document.getElementById('uninstallProtectionSwitch');
+  const label=document.getElementById('uninstallProtectionText');
+  if(sw)sw.classList.toggle('on',enabled);
+  if(label)label.textContent=enabled
+    ?'Enabled — deactivate in Android settings before uninstalling'
+    :'Off — optional device administrator protection';
+  return enabled;
+}
+window.onUninstallProtectionChanged=function(enabled){
+  updateUninstallProtection();
+  showPopup(enabled?'🛡️':'ℹ️',enabled?'Uninstall Protection Enabled':'Uninstall Protection Not Enabled',
+    enabled?'Android will normally require you to deactivate Folder Locker as a device administrator before uninstalling. Android controls any PIN, pattern, or fingerprint prompt.':'Protection was not enabled. You can try again from Settings.');
+};
+function toggleUninstallProtection(){
+  if(!window.AndroidVault||!AndroidVault.requestUninstallProtection){
+    showPopup('⚠️','Not available','Uninstall protection is available in the installed Android app only.');return;
+  }
+  if(updateUninstallProtection()){
+    showPopup('🛡️','Protection is enabled','To disable it, open Android Settings and find Device admin apps. Android may not require a fingerprint for every uninstall-related action.');
+    if(AndroidVault.openUninstallProtectionSettings)AndroidVault.openUninstallProtectionSettings();
+    return;
+  }
+  showPopup('🛡️','Enable uninstall protection','Android will ask you to activate Folder Locker as a device administrator. You can cancel this request at any time.');
+  AndroidVault.requestUninstallProtection();
+}
+updateUninstallProtection();
 updateFP();
 </script>
 </body>

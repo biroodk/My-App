@@ -1,6 +1,7 @@
 package com.securevault.app;
 
 import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
 import android.content.*;
 import android.content.res.AssetManager;
 import android.database.Cursor;
@@ -12,6 +13,7 @@ import android.os.*;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.provider.Settings;
 import android.webkit.*;
 import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
@@ -32,7 +34,8 @@ public class MainActivity extends Activity {
     private String[] pendingExportPaths = new String[0];
     private final ArrayList<String> pendingImportSources = new ArrayList<>();
     private File vaultRoot;
-    private boolean sessionUnlocked = false;
+    private volatile boolean sessionUnlocked = false;
+    private boolean externalPickerActive = false;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -61,7 +64,7 @@ public class MainActivity extends Activity {
             }
         });
         webView.addJavascriptInterface(new VaultBridge(), "AndroidVault");
-        webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html");
+        webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html" + (prefs().contains("password_hash") ? "#login" : ""));
     }
 
     @Override public void onBackPressed() {
@@ -72,6 +75,43 @@ public class MainActivity extends Activity {
             if (sessionUnlocked) { webView.loadUrl("https://appassets.androidplatform.net/assets/index.html"); return; }
             webView.evaluateJavascript("window.showGlobalPopup&&showGlobalPopup('↩️','Folder Locker','Use the on-screen navigation to leave this section.');", null);
         });
+    }
+
+
+    private long getAutoLockTimeoutMillis() {
+        String value = prefs().getString("auto_lock", "5min");
+        if ("immediately".equals(value)) return 0L;
+        if ("1min".equals(value)) return 60_000L;
+        if ("5min".equals(value)) return 5L * 60_000L;
+        if ("10min".equals(value)) return 10L * 60_000L;
+        if ("15min".equals(value)) return 15L * 60_000L;
+        if ("30min".equals(value)) return 30L * 60_000L;
+        if ("1hour".equals(value)) return 60L * 60_000L;
+        if ("8hour".equals(value)) return 8L * 60L * 60_000L;
+        if ("never".equals(value)) return -1L;
+        return 5L * 60_000L;
+    }
+
+    @Override protected void onStop() {
+        if (sessionUnlocked && !externalPickerActive) {
+            prefs().edit().putLong("session_backgrounded_at", System.currentTimeMillis()).apply();
+        }
+        super.onStop();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (externalPickerActive || webView == null) return;
+        long backgroundedAt = prefs().getLong("session_backgrounded_at", 0L);
+        if (backgroundedAt > 0L && sessionUnlocked) {
+            long timeout = getAutoLockTimeoutMillis();
+            if (timeout >= 0L && System.currentTimeMillis() - backgroundedAt >= timeout) {
+                sessionUnlocked = false;
+                webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html#login");
+            }
+        }
+        prefs().edit().remove("session_backgrounded_at").apply();
+        webView.post(() -> webView.evaluateJavascript("window.updateUninstallProtection&&updateUninstallProtection()", null));
     }
 
     private WebResourceResponse serveVaultUrl(String url) {
@@ -162,8 +202,14 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean setPassword(String p){if(p==null||p.length()<4)return false;prefs().edit().putString("password_hash",hash(p)).apply();return true;}
         @JavascriptInterface public boolean verifyPassword(String p){String h=prefs().getString("password_hash","");return !h.isEmpty()&&h.equals(hash(p));}
         @JavascriptInterface public boolean isSessionUnlocked(){return sessionUnlocked;}
-        @JavascriptInterface public void unlockSession(){sessionUnlocked=true;}
-        @JavascriptInterface public void lockSession(){sessionUnlocked=false;}
+        @JavascriptInterface public void unlockSession(){sessionUnlocked=true;prefs().edit().remove("session_backgrounded_at").apply();}
+        @JavascriptInterface public void lockSession(){sessionUnlocked=false;prefs().edit().remove("session_backgrounded_at").apply();}
+        @JavascriptInterface public String getAutoLock(){return prefs().getString("auto_lock","");}
+        @JavascriptInterface public boolean setAutoLock(String value){
+            if(value==null || !Arrays.asList("immediately","1min","5min","10min","15min","30min","1hour","8hour","never").contains(value)) return false;
+            prefs().edit().putString("auto_lock",value).apply();
+            return true;
+        }
         @JavascriptInterface public boolean isFingerprintEnabled(){return prefs().getBoolean("fingerprint_enabled",false);}
         @JavascriptInterface public boolean setFingerprintEnabled(boolean on){prefs().edit().putBoolean("fingerprint_enabled",on).apply();return true;}
         @JavascriptInterface public boolean isDeviceCredentialEnabled(){return prefs().getBoolean("device_credential_enabled",false);}
@@ -178,8 +224,8 @@ public class MainActivity extends Activity {
             return km!=null&&km.isKeyguardSecure();
         }
         @JavascriptInterface public boolean canUseDeviceCredential(){return canUseBiometric();}
-        @JavascriptInterface public void pickFiles(String folder){pendingFolder=folder==null?"":folder;pendingFilter="";runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
-        @JavascriptInterface public void pickFilesForCategory(String category){pendingFolder="";pendingFilter=category==null?"":category;runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);String[] t=categoryTypes(pendingFilter);if(t!=null&&t.length==1)i.setType(t[0]);else{i.setType("*/*");if(t!=null)i.putExtra(Intent.EXTRA_MIME_TYPES,t);}i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
+        @JavascriptInterface public void pickFiles(String folder){pendingFolder=folder==null?"":folder;pendingFilter="";runOnUiThread(()->{externalPickerActive=true;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
+        @JavascriptInterface public void pickFilesForCategory(String category){pendingFolder="";pendingFilter=category==null?"":category;runOnUiThread(()->{externalPickerActive=true;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);String[] t=categoryTypes(pendingFilter);if(t!=null&&t.length==1)i.setType(t[0]);else{i.setType("*/*");if(t!=null)i.putExtra(Intent.EXTRA_MIME_TYPES,t);}i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,PICK_FILES);});}
         @JavascriptInterface public boolean createFolder(String parent,String name){if(name==null||name.trim().isEmpty())return false;File p=folderDir(parent);if(p==null)return false;File d=new File(p,cleanName(name));return !d.exists()&&d.mkdirs();}
         @JavascriptInterface public boolean deleteFile(String path){File f=safeRelative(path);return f!=null&&f.isFile()&&f.delete();}
         @JavascriptInterface public boolean deleteFolder(String path){File f=safeRelative(path);return f!=null&&f.isDirectory()&&deleteRecursively(f);}
@@ -210,6 +256,74 @@ public class MainActivity extends Activity {
         @JavascriptInterface public boolean exportFile(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=false;startExportPicker();return true;}
         @JavascriptInterface public boolean exportFiles(String pathsJson){try{JSONArray a=new JSONArray(pathsJson);pendingExportPaths=new String[a.length()];for(int i=0;i<a.length();i++)pendingExportPaths[i]=a.getString(i);pendingExportPath="";pendingDeleteAfterExport=false;startExportPicker();return true;}catch(Exception e){return false;}}
         @JavascriptInterface public boolean removeToDownloads(String path){pendingExportPath=path;pendingExportPaths=new String[]{path};pendingDeleteAfterExport=true;startExportPicker();return true;}
+        @JavascriptInterface public boolean removeFilesToPhone(String pathsJson){
+            try {
+                JSONArray input = new JSONArray(pathsJson);
+                ArrayList<String> valid = new ArrayList<>();
+                for (int i=0;i<input.length();i++) {
+                    String path = input.getString(i);
+                    File file = safeRelative(path);
+                    if (file != null && file.isFile() && file.exists()) valid.add(path);
+                }
+                if (valid.isEmpty()) return false;
+                pendingExportPaths = valid.toArray(new String[0]);
+                pendingExportPath = "";
+                pendingDeleteAfterExport = true;
+                startExportPicker();
+                return true;
+            } catch (Exception e) { return false; }
+        }
+        @JavascriptInterface public boolean openExternalUrl(String rawUrl) {
+            try {
+                Uri uri = Uri.parse(rawUrl);
+                String host = uri.getHost();
+                if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null) return false;
+                String normalized = host.toLowerCase(Locale.ROOT);
+                if (!Arrays.asList("chat.whatsapp.com","wa.me","my-first-app-v1.netlify.app").contains(normalized)) return false;
+                runOnUiThread(() -> {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        webView.post(() -> webView.evaluateJavascript("window.onExternalLinkResult&&window.onExternalLinkResult(false)", null));
+                    }
+                });
+                return true;
+            } catch (Exception e) { return false; }
+        }
+        private ComponentName uninstallAdminComponent() {
+            return new ComponentName(MainActivity.this, FolderLockerAdminReceiver.class);
+        }
+        @JavascriptInterface public boolean isUninstallProtectionEnabled() {
+            try {
+                DevicePolicyManager dpm = (DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
+                return dpm != null && dpm.isAdminActive(uninstallAdminComponent());
+            } catch (Exception e) { return false; }
+        }
+        @JavascriptInterface public boolean requestUninstallProtection() {
+            runOnUiThread(() -> {
+                try {
+                    if (isUninstallProtectionEnabled()) {
+                        webView.post(() -> webView.evaluateJavascript("window.onUninstallProtectionChanged&&window.onUninstallProtectionChanged(true)", null));
+                        return;
+                    }
+                    Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, uninstallAdminComponent());
+                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                            "Enable Folder Locker as a device administrator. Android will require this administrator to be deactivated before the app can be uninstalled on supported devices.");
+                    startActivityForResult(intent, 1003);
+                } catch (Exception e) {
+                    webView.post(() -> webView.evaluateJavascript("window.onUninstallProtectionChanged&&window.onUninstallProtectionChanged(false)", null));
+                }
+            });
+            return true;
+        }
+        @JavascriptInterface public void openUninstallProtectionSettings() {
+            runOnUiThread(() -> {
+                try { startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); }
+                catch (Exception ignored) {}
+            });
+        }
         @JavascriptInterface public void authenticateBiometric(){
             if(!isFingerprintEnabled() && !isDeviceCredentialEnabled()){
                 notifyMessage("biometricDisabled");
@@ -263,29 +377,40 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public void openWhatsApp(){
-            runOnUiThread(()->{
-                Uri uri=Uri.parse("https://wa.me/256709387311?text="+Uri.encode("Hello Ahmed. can you create for me a website. Please"));
-                boolean launched=false;
-                String[] packages={"com.whatsapp","com.whatsapp.w4b"};
-                for(String packageName:packages){
-                    try{
-                        Intent appIntent=new Intent(Intent.ACTION_VIEW,uri);
+            runOnUiThread(() -> {
+                if (!hasValidatedInternetConnection()) {
+                    webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult('offline')", null);
+                    return;
+                }
+                String phone = "256709387311";
+                String message = "Hello Ahmed. can you create for me a website. Please";
+                Uri chatUri = Uri.parse("whatsapp://send?phone=" + phone + "&text=" + Uri.encode(message));
+                boolean launched = false;
+                String[] packages = {"com.whatsapp", "com.whatsapp.w4b"};
+                for (String packageName : packages) {
+                    try {
+                        Intent appIntent = new Intent(Intent.ACTION_VIEW, chatUri);
                         appIntent.setPackage(packageName);
+                        appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(appIntent);
-                        launched=true;
+                        launched = true;
                         break;
-                    }catch(android.content.ActivityNotFoundException ignored){}
-                    catch(Exception ignored){}
+                    } catch (android.content.ActivityNotFoundException ignored) {
+                    } catch (Exception ignored) {
+                    }
                 }
-                if(!launched){
-                    try{
-                        Intent fallback=new Intent(Intent.ACTION_VIEW,uri);
+                if (!launched) {
+                    try {
+                        Uri webUri = Uri.parse("https://wa.me/" + phone + "?text=" + Uri.encode(message));
+                        Intent fallback = new Intent(Intent.ACTION_VIEW, webUri);
+                        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(fallback);
-                        launched=true;
-                    }catch(Exception ignored){}
+                        launched = true;
+                    } catch (Exception ignored) {
+                    }
                 }
-                final boolean ok=launched;
-                webView.post(()->webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult("+ok+")",null));
+                final boolean ok = launched;
+                webView.post(() -> webView.evaluateJavascript("window.onWhatsAppResult&&window.onWhatsAppResult(" + ok + ")", null));
             });
         }
     }
@@ -307,7 +432,7 @@ public class MainActivity extends Activity {
         // Do not use a one-time preference as the only guard: an earlier APK may have
         // set it before the sample assets were packaged. Ensure every missing sample
         // exists on every launch, without overwriting user files already in the vault.
-        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","sound4.mp3","video1.mp4","video2.mp4","video3.mp4"};
+        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","sound4.mp3","sound5.mp3","sound6.mp3","About.pdf","video1.mp4","video2.mp4","video3.mp4"};
         for(String name:samples){
             File out=new File(vaultRoot,name);
             if(out.isFile() && out.length()>0) continue;
@@ -333,45 +458,89 @@ public class MainActivity extends Activity {
     }
     private void cleanExpiredSharedFiles(){File d=sharedTempDir();File[] fs=d.listFiles();if(fs==null)return;long cutoff=System.currentTimeMillis()-10*60*1000L;for(File f:fs)if(f.isFile()&&f.lastModified()<cutoff)f.delete();}
     private String[] categoryTypes(String c){if("images".equals(c))return new String[]{"image/*"};if("videos".equals(c))return new String[]{"video/*"};if("music".equals(c))return new String[]{"audio/*"};if("documents".equals(c))return new String[]{"application/pdf","text/*","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.ms-excel","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-powerpoint","application/vnd.openxmlformats-officedocument.presentationml.presentation","application/rtf","application/vnd.oasis.opendocument.text","application/vnd.oasis.opendocument.spreadsheet","application/vnd.oasis.opendocument.presentation","text/csv"};return null;}
-    private void startExportPicker(){runOnUiThread(()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,EXPORT_TREE);});}
+    private void startExportPicker(){runOnUiThread(()->{externalPickerActive=true;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,EXPORT_TREE);});}
     private android.content.SharedPreferences prefs(){return getSharedPreferences("folder_locker_security",MODE_PRIVATE);}
     private String hash(String s){try{byte[] b=MessageDigest.getInstance("SHA-256").digest(s.getBytes("UTF-8"));StringBuilder x=new StringBuilder();for(byte q:b)x.append(String.format(Locale.US,"%02x",q));return x.toString();}catch(Exception e){return"";}}
     private void notifyBiometric(boolean ok){webView.post(()->webView.evaluateJavascript("window.onNativeBiometric&&window.onNativeBiometric("+ok+")",null));}
     private void notifyMessage(String code){webView.post(()->webView.evaluateJavascript("window.onNativeSecurityMessage&&window.onNativeSecurityMessage("+JSONObject.quote(code)+")",null));}
 
-    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){super.onActivityResult(requestCode,resultCode,data);
-        if(requestCode==PICK_FILES){
-            if(resultCode!=RESULT_OK||data==null)return;
-            ArrayList<Uri> us=new ArrayList<>();
-            if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)us.add(data.getClipData().getItemAt(i).getUri());
-            else if(data.getData()!=null)us.add(data.getData());
-            int added=0,removed=0,originalsRemain=0,failed=0;
-            String importedFolder=pendingFolder;
-            String importedFilter=pendingFilter;
-            for(Uri u:us){
-                // Verify the vault copy before attempting to remove the original.
-                if(copyUri(u,importedFolder,importedFilter)){
-                    added++;
-                    if(tryDeleteSource(u)) removed++;
-                    else originalsRemain++;
-                }else{
-                    failed++;
-                }
-            }
-            pendingFolder=""; pendingFilter="";
-            final int a=added,r=removed,p=originalsRemain,f=failed;
-            if(a>0){
-                String message=r+" original file(s) removed from phone storage.";
-                if(p>0) message+=" "+p+" original file(s) could not be removed; check your file manager and remove them manually if you want them kept only in the vault.";
-                android.widget.Toast.makeText(MainActivity.this,message,android.widget.Toast.LENGTH_LONG).show();
-            }
-            webView.postDelayed(()->webView.evaluateJavascript(
-                    "window.onNativeFilesImported&&window.onNativeFilesImported("+
-                    JSONObject.quote(importedFolder)+", "+a+", "+r+", "+f+")",null),150);
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1003) {
+            boolean enabled = false;
+            try { enabled = isUninstallProtectionActive(); } catch (Exception ignored) {}
+            final boolean active = enabled;
+            if (webView != null) webView.postDelayed(
+                    () -> webView.evaluateJavascript("window.onUninstallProtectionChanged&&window.onUninstallProtectionChanged(" + active + ")", null), 150);
             return;
         }
-        if(requestCode==EXPORT_TREE){if(resultCode!=RESULT_OK||data==null||data.getData()==null){final int total=pendingExportPaths.length;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone(0,"+total+")",null),100);return;}Uri tree=data.getData();try{getContentResolver().takePersistableUriPermission(tree,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);}catch(Exception ignored){}int done=0;for(String p:pendingExportPaths)if(exportOneToTree(tree,p,pendingDeleteAfterExport))done++;final int n=done,total=pendingExportPaths.length;webView.postDelayed(()->webView.evaluateJavascript("window.onNativeExportDone&&window.onNativeExportDone("+n+","+total+")",null),150);}
+
+        if (requestCode == PICK_FILES) {
+            externalPickerActive = false;
+            prefs().edit().remove("session_backgrounded_at").apply();
+            if (resultCode != RESULT_OK || data == null) return;
+            ArrayList<Uri> us = new ArrayList<>();
+            if (data.getClipData() != null) {
+                for (int i = 0; i < data.getClipData().getItemCount(); i++) us.add(data.getClipData().getItemAt(i).getUri());
+            } else if (data.getData() != null) us.add(data.getData());
+            int added = 0, removed = 0, originalsRemain = 0, failed = 0;
+            String importedFolder = pendingFolder;
+            String importedFilter = pendingFilter;
+            for (Uri u : us) {
+                if (copyUri(u, importedFolder, importedFilter)) {
+                    added++;
+                    if (tryDeleteSource(u)) removed++; else originalsRemain++;
+                } else failed++;
+            }
+            pendingFolder = "";
+            pendingFilter = "";
+            final int a = added, r = removed, p = originalsRemain, f = failed;
+            if (a > 0) {
+                String message = r + " original file(s) removed from phone storage.";
+                if (p > 0) message += " " + p + " original file(s) could not be removed; check your file manager and remove them manually if you want them kept only in the vault.";
+                android.widget.Toast.makeText(MainActivity.this, message, android.widget.Toast.LENGTH_LONG).show();
+            }
+            webView.postDelayed(() -> webView.evaluateJavascript(
+                    "window.onNativeFilesImported&&window.onNativeFilesImported(" + JSONObject.quote(importedFolder) + "," + a + "," + r + "," + f + ")", null), 150);
+            return;
+        }
+
+        if (requestCode == EXPORT_TREE) {
+            externalPickerActive = false;
+            prefs().edit().remove("session_backgrounded_at").apply();
+            final String[] paths = pendingExportPaths;
+            final int total = paths.length;
+            final boolean deleteAfterExport = pendingDeleteAfterExport;
+            pendingExportPath = "";
+            pendingExportPaths = new String[0];
+            pendingDeleteAfterExport = false;
+
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+                if (webView != null) webView.postDelayed(() -> webView.evaluateJavascript(
+                        "window.onNativeExportDone&&window.onNativeExportDone(0," + total + ",true)", null), 100);
+                return;
+            }
+            Uri tree = data.getData();
+            try {
+                getContentResolver().takePersistableUriPermission(tree,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            } catch (Exception ignored) {}
+            int done = 0;
+            for (String path : paths) if (exportOneToTree(tree, path, deleteAfterExport)) done++;
+            final int n = done, t = total;
+            if (webView != null) webView.postDelayed(() -> webView.evaluateJavascript(
+                    "window.onNativeExportDone&&window.onNativeExportDone(" + n + "," + t + ",false)", null), 150);
+        }
     }
+
+    private boolean isUninstallProtectionActive() {
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
+            return dpm != null && dpm.isAdminActive(new ComponentName(this, FolderLockerAdminReceiver.class));
+        } catch (Exception e) { return false; }
+    }
+
     private boolean copyUri(Uri u,String target,String filter){
         File temp=null;
         try{

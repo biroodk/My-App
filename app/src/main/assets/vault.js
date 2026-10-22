@@ -25,4 +25,4 @@ function fileUrl(f){return f.url||f.assetUrl||'';}
 function formatSize(n){n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';if(n<1073741824)return(n/1048576).toFixed(1)+' MB';return(n/1073741824).toFixed(2)+' GB';}
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function showGlobalPopup(icon,title,msg){let p=document.getElementById('popup');if(!p){alert(msg);return;}document.getElementById('pIcon').textContent=icon;document.getElementById('pTitle').textContent=title;document.getElementById('pMsg').textContent=msg;p.classList.add('show');}
-function requireUnlock(){if(isNative()&&!AndroidVault.isSessionUnlocked()){location.replace('animations.html');return false;}return true;}
+function requireUnlock(){if(isNative()&&!AndroidVault.isSessionUnlocked()){const route=(AndroidVault.hasPassword&&AndroidVault.hasPassword())?'#login':'';location.replace('animations.html'+route);return false;}return true;}

@@ -13,7 +13,7 @@ const cats=['images','videos','music','documents','other'];let all=[],folders=[]
 requireUnlock();
 function toastMsg(m,e=false){toast.textContent=m;toast.className='toast show'+(e?' err':'');setTimeout(()=>toast.className='toast',2500)}
 function toggleSearch(){searchBox.classList.toggle('show');if(searchBox.classList.contains('show'))search.focus()}
-function toggleMainMenu(){menuItems.innerHTML='<div class="item" onclick="openSort()">↕️ Sort by <span style="float:right">›</span></div><div class="item" onclick="toggleSelectMode()">☑️ Mark several / Select</div><div class="item" onclick="selectAll()">☑️ Select all</div><div class="item" onclick="deleteSelected()">🗑️ Delete selected</div><div class="item" onclick="moveSelected()">📁 Move</div><div class="item" onclick="copySelected()">📋 Copy</div><div class="item" onclick="shareSelected()">🔗 Share</div><div class="item" onclick="infoSelected()">ℹ️ File info</div><div class="item" onclick="renameSelected()">✏️ Rename</div><div class="item" onclick="openWithSelected()">📂 Open with...</div><div class="item" onclick="exportSelected()">📤 Export / choose location</div><div class="item" onclick="removeSelected()">↩️ Export then remove from vault</div>';menuOverlay.classList.add('show')}
+function toggleMainMenu(){menuItems.innerHTML='<div class="item" onclick="openSort()">↕️ Sort by <span style="float:right">›</span></div><div class="item" onclick="toggleSelectMode()">☑️ Mark several / Select</div><div class="item" onclick="selectAll()">☑️ Select all</div><div class="item" onclick="deleteSelected()">🗑️ Delete selected</div><div class="item" onclick="moveSelected()">📁 Move</div><div class="item" onclick="copySelected()">📋 Copy</div><div class="item" onclick="shareSelected()">🔗 Share</div><div class="item" onclick="infoSelected()">ℹ️ File info</div><div class="item" onclick="renameSelected()">✏️ Rename</div><div class="item" onclick="openWithSelected()">📂 Open with...</div><div class="item" onclick="exportSelected()">📤 Export / choose location</div><div class="item" onclick="removeSelected()">↩️ Move selected files back to phone storage</div>';menuOverlay.classList.add('show')}
 function openSort(){menuOverlay.classList.remove('show');sortOverlay.classList.add('show')}function closeSort(){sortOverlay.classList.remove('show')}
 function toggleFab(){fabOverlay.classList.toggle('show')}
 function showActionPopup(icon,title,msg,input=false,def='',confirmMode=false){return new Promise(resolve=>{apIcon.textContent=icon;apTitle.textContent=title;apMsg.textContent=msg;apInput.style.display=input?'block':'none';apInput.value=def;apCancel.style.display=confirmMode?'block':'none';actionPopup.classList.add('show');window._actionResolve=resolve;if(input)setTimeout(()=>apInput.focus(),80)})}
@@ -51,9 +51,22 @@ function shareSelected(){menuOverlay.classList.remove('show');if(!needSelection(
 function exportSelected(){menuOverlay.classList.remove('show');if(!needSelection())return;let p=selectedFiles().map(f=>f.path);if(AndroidVault.exportFiles)AndroidVault.exportFiles(JSON.stringify(p));else p.forEach(x=>AndroidVault.exportFile(x))}
 async function renameSelected(){menuOverlay.classList.remove('show');if(selected.size!==1){toastMsg('Select exactly one file to rename',true);return}let f=selectedFiles()[0],n=await showActionPopup('✏️','Rename file','Enter the new file name (extension is kept)',true,fileNameStem(f.name),true);if(n&&renameVaultFilePreservingExtension(f.path,f.name,n)){selected.clear();selecting=false;render();toastMsg('Renamed')}else if(n)toastMsg('Rename failed',true)}
 function infoSelected(){menuOverlay.classList.remove('show');if(!needSelection())return;let f=selectedFiles()[0];let text=selected.size===1?'<div class="info"><b>Name:</b> '+escapeHtml(f.name)+'<br><b>Type:</b> '+escapeHtml(f.mime||mimeFor(f.name))+'<br><b>Size:</b> '+formatSize(f.size)+'<br><b>Modified:</b> '+new Date(f.time||Date.now()).toLocaleString()+'<br><b>Category:</b> '+escapeHtml(f.category)+'</div>':'<div class="info"><b>Selected:</b> '+selected.size+' file(s)<br><b>Total size:</b> '+formatSize(selectedFiles().reduce((s,x)=>s+(Number(x.size)||0),0))+'</div>';menuOverlay.classList.add('show');menuItems.innerHTML=text+'<div class="item" onclick="menuOverlay.classList.remove(\'show\')">Close</div>'}
-function showFileMenu(i){menuFile=i;let f=all[i];menuItems.innerHTML='<div class="item" onclick="renameOne()">✏️ Rename</div><div class="item" onclick="copyOne()">📋 Copy</div><div class="item" onclick="moveOne()">📁 Move</div><div class="item" onclick="shareOne()">🔗 Share</div><div class="item" onclick="infoOne()">ℹ️ File info</div><div class="item" onclick="openWithCurrent()">📂 Open with...</div><div class="item" onclick="exportOne()">📤 Export / choose location</div><div class="item" onclick="removeOne()">↩️ Remove from Folder Locker</div><div class="item" onclick="deleteOne()" style="color:#ff8a8a">🗑️ Delete permanently</div>';menuOverlay.classList.add('show')}
+function showFileMenu(i){menuFile=i;let f=all[i];menuItems.innerHTML='<div class="item" onclick="renameOne()">✏️ Rename</div><div class="item" onclick="copyOne()">📋 Copy</div><div class="item" onclick="moveOne()">📁 Move</div><div class="item" onclick="shareOne()">🔗 Share</div><div class="item" onclick="infoOne()">ℹ️ File info</div><div class="item" onclick="openWithCurrent()">📂 Open with...</div><div class="item" onclick="exportOne()">📤 Export / choose location</div><div class="item" onclick="removeOne()">↩️ Move back to phone storage</div><div class="item" onclick="deleteOne()" style="color:#ff8a8a">🗑️ Delete permanently</div>';menuOverlay.classList.add('show')}
 function openWithSelected(){menuOverlay.classList.remove('show');if(!needSelection())return;if(selectedFiles().length!==1){toastMsg('Select exactly one file to open with another app',true);return}window._openFile=selectedFiles()[0];openwith.classList.add('show')}
-function removeSelected(){menuOverlay.classList.remove('show');if(!needSelection())return;if(selectedFiles().length!==1){toastMsg('Select exactly one file to export and remove',true);return}let f=selectedFiles()[0];AndroidVault.removeToDownloads(f.path)}
+async function removeSelected(){
+  menuOverlay.classList.remove('show');
+  if(!needSelection())return;
+  const picked=selectedFiles();
+  if(!picked.length)return;
+  const confirmed=await showActionPopup('↩️','Move selected files back to phone storage',
+    'Move '+picked.length+' selected file(s) to the phone storage folder you choose? Files are removed from the vault only after each copy is verified.',false,'',true);
+  if(!confirmed)return;
+  if(!window.AndroidVault||!AndroidVault.removeFilesToPhone){toastMsg('Batch move is not available in this app version. Update Folder Locker and try again.',true);return}
+  window.pendingRemoveSelected=true;
+  const started=AndroidVault.removeFilesToPhone(JSON.stringify(picked.map(f=>f.path)));
+  if(!started){window.pendingRemoveSelected=false;toastMsg('Could not start moving the selected files',true);return}
+  toastMsg('Choose a destination folder on your phone');
+}
 function one(){return all[menuFile]}
 async function renameOne(){let f=one(),n=await showActionPopup('✏️','Rename file','Enter the new file name (extension is kept)',true,fileNameStem(f.name),true);menuOverlay.classList.remove('show');if(n&&renameVaultFilePreservingExtension(f.path,f.name,n)){render();toastMsg('Renamed')}else if(n)toastMsg('Rename failed',true)}
 function copyOne(){let f=one();menuOverlay.classList.remove('show');chooseFolder(t=>{let ok=AndroidVault.copyFile(f.path,t);render();toastMsg(ok?'Copied':'Copy failed',!ok)})}
@@ -76,5 +89,18 @@ function openWithAndroid(){if(window._openFile&&AndroidVault.openFile)AndroidVau
 viewerMain.addEventListener('touchstart',e=>{if(e.touches.length===1)viewerTouchStart={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:true});
 viewerMain.addEventListener('touchend',e=>{if(!viewerTouchStart||!e.changedTouches.length){viewerTouchStart=null;return}const dx=e.changedTouches[0].clientX-viewerTouchStart.x,dy=e.changedTouches[0].clientY-viewerTouchStart.y;viewerTouchStart=null;if(zoom<=1&&Math.abs(dx)>65&&Math.abs(dy)<80)viewerMove(dx<0?1:-1)},{passive:true});
 window.handleAndroidBack=function(){const visible=id=>document.getElementById(id)?.classList.contains('show');if(visible('viewer')){closeViewer();return true}for(const id of ['openwith','actionPopup','folderDialog','sortOverlay','menuOverlay','fabOverlay','popup'])if(visible(id)){document.getElementById(id).classList.remove('show');return true}if(currentFolderPath){goUpFolder();return true}if(selecting){selecting=false;selected.clear();render();return true}if(returnHref&&returnHref.includes('/assets/')&&!returnHref.endsWith('/files.html')){window.location.href=returnHref;return true}return false};
-function sortNow(t){sortMode=t;closeSort();render();toastMsg('Sorted by '+t)}document.getElementById('folderNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')createFolderFromDialog();if(e.key==='Escape')closeFolderDialog()});window.onNativeFilesImported=(c,n,r,f)=>{render();if(n)toastMsg(n+' file(s) copied into the vault');if(f)toastMsg(f+' file(s) could not be imported. Check the file type and try again.',true);if(!n&&!f)toastMsg('No files were imported.',true)};window.onNativeExportDone=(n,t)=>{render();toastMsg(n+' of '+t+' file(s) exported',n<t)};render();
+function sortNow(t){sortMode=t;closeSort();render();toastMsg('Sorted by '+t)}document.getElementById('folderNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')createFolderFromDialog();if(e.key==='Escape')closeFolderDialog()});window.onNativeFilesImported=(c,n,r,f)=>{render();if(n)toastMsg(n+' file(s) copied into the vault');if(f)toastMsg(f+' file(s) could not be imported. Check the file type and try again.',true);if(!n&&!f)toastMsg('No files were imported.',true)};window.pendingRemoveSelected=false;
+window.onNativeExportDone=(n,t,cancelled=false)=>{
+  if(window.pendingRemoveSelected){
+    window.pendingRemoveSelected=false;
+    if(cancelled){toastMsg('Move cancelled. Your vault files were not changed.',true);return}
+    selected.clear();selecting=false;render();
+    if(n===t)toastMsg(n+' selected file(s) moved back to phone storage');
+    else toastMsg(n+' of '+t+' selected file(s) moved back. Files that failed remain in the vault.',true);
+    return;
+  }
+  render();
+  if(cancelled)toastMsg('Export cancelled',true);
+  else toastMsg(n+' of '+t+' file(s) exported',n<t);
+};render();
 </script></body></html>
