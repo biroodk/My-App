@@ -1,67 +1,63 @@
-import { getStore } from "@netlify/blobs";
-import { createHash } from "node:crypto";
+import { getStore } from '@netlify/blobs';
+import { createHash, randomBytes } from 'node:crypto';
 
-const store = getStore("folder-locker-public-stats");
+const stats = getStore({ name: 'folder-locker-public-stats', consistency: 'strong' });
+const community = getStore({ name: 'folder-locker-community-v2', consistency: 'strong' });
 const DAY_MS = 24 * 60 * 60 * 1000;
 const headers = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store",
-  "access-control-allow-origin": "*",
-  "access-control-allow-headers": "content-type, authorization",
-  "access-control-allow-methods": "GET, POST, OPTIONS"
+  'content-type': 'application/json; charset=utf-8',
+  'cache-control': 'no-store',
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'content-type, authorization',
+  'access-control-allow-methods': 'GET, POST, OPTIONS'
 };
-
-export default async (request) => {
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers });
+const digest = value => createHash('sha256').update(value).digest('hex');
+async function completedCount() {
+  const results = await stats.list({ prefix: 'completed-downloads/' });
+  return results.blobs?.length || 0;
+}
+async function isAdmin(request) {
+  const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token || token.length > 200) return false;
+  const session = await community.get(`sessions/${digest(token)}`, { type: 'json', consistency: 'strong' });
+  if (!session || Number(session.expiresAt || 0) <= Date.now()) return false;
+  const user = await community.get(`users/${session.userId}`, { type: 'json', consistency: 'strong' });
+  return user?.role === 'admin';
+}
+export default async request => {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   try {
     const url = new URL(request.url);
-    if (request.method === "POST" && url.searchParams.get("action") === "download") {
-      const total = await store.get("download-requests", { type: "json" }) || { count: 0 };
-      total.count = Number(total.count || 0) + 1;
-      await store.setJSON("download-requests", total);
-      return new Response(JSON.stringify({ downloadRequests: total.count }), { status: 200, headers });
+    if (request.method === 'POST' && url.searchParams.get('action') === 'download-complete') {
+      // Each completed body transfer gets a unique event key instead of a racy shared counter.
+      await stats.set(`completed-downloads/${Date.now()}-${randomBytes(12).toString('hex')}`, '1', { onlyIfNew: true });
+      return json({ completedDownloads: await completedCount() }, 201);
     }
-    if (request.method !== "GET") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    if (request.method !== 'GET') return json({ error: 'Method not allowed.' }, 405);
+    if (url.searchParams.get('admin') === '1') {
+      if (!(await isAdmin(request))) return json({ error: 'Administrator permission required.' }, 403);
+      const totals = await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 };
+      return json({ visits: Number(totals.visits || 0), completedDownloads: await completedCount() });
     }
-    if (url.searchParams.get("admin") === "1") {
-      const dbUrl = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-      const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-      if (!dbUrl || !serviceKey || !token || token.length > 200) return new Response(JSON.stringify({ error: "Administrator authorization required." }), { status: 403, headers });
-      const tokenHash = createHash("sha256").update(token).digest("hex");
-      const checkUrl = new URL(`${dbUrl}/rest/v1/community_sessions`);
-      checkUrl.searchParams.set("select", "user:community_users!community_sessions_user_id_fkey(role)");
-      checkUrl.searchParams.set("token_hash", `eq.${tokenHash}`);
-      checkUrl.searchParams.set("expires_at", `gt.${new Date().toISOString()}`);
-      checkUrl.searchParams.set("limit", "1");
-      const authResponse = await fetch(checkUrl, { headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}`, accept: "application/json" } });
-      const authRows = authResponse.ok ? await authResponse.json() : [];
-      if (!authRows[0] || authRows[0].user?.role !== "admin") return new Response(JSON.stringify({ error: "Administrator permission required." }), { status: 403, headers });
-      const totals = await store.get("totals", { type: "json" }) || { visits: 0 };
-      const downloads = await store.get("download-requests", { type: "json" }) || { count: 0 };
-      return new Response(JSON.stringify({ visits: Number(totals.visits || 0), downloadRequests: Number(downloads.count || 0) }), { status: 200, headers });
-    }
-    const visitorId = (url.searchParams.get("visitorId") || "").slice(0, 120);
+    const visitorId = (url.searchParams.get('visitorId') || '').slice(0, 120);
     let counted = false;
     if (visitorId) {
-      const hash = createHash("sha256").update(visitorId).digest("hex");
-      const visitorKey = `visitor:${hash}`;
+      const visitorKey = `visitor:${digest(visitorId)}`;
       const now = Date.now();
-      const prior = await store.get(visitorKey, { type: "json" });
-      const priorAt = prior && Number(prior.lastCountedAt || 0);
+      const prior = await stats.get(visitorKey, { type: 'json', consistency: 'strong' });
+      const priorAt = Number(prior?.lastCountedAt || 0);
       if (!priorAt || now - priorAt >= DAY_MS) {
-        const totals = await store.get("totals", { type: "json" }) || { visits: 0 };
+        const totals = await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 };
         totals.visits = Number(totals.visits || 0) + 1;
-        await store.setJSON("totals", totals);
-        await store.setJSON(visitorKey, { lastCountedAt: now });
+        await stats.setJSON('totals', totals);
+        await stats.setJSON(visitorKey, { lastCountedAt: now });
         counted = true;
       }
     }
-    const totals = await store.get("totals", { type: "json" }) || { visits: 0 };
-    const downloads = await store.get("download-requests", { type: "json" }) || { count: 0 };
-    return new Response(JSON.stringify({ visits: Number(totals.visits || 0), downloadRequests: Number(downloads.count || 0), counted }), { status: 200, headers });
+    const totals = await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 };
+    return json({ visits: Number(totals.visits || 0), completedDownloads: await completedCount(), counted });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Stats temporarily unavailable" }), { status: 503, headers });
+    return json({ error: 'Website statistics are temporarily unavailable.' }, 503);
   }
 };

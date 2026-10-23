@@ -258,7 +258,7 @@ function showPopup(title,msg,icon='🔒',confirm=false){return new Promise(resol
 function closeAnimPopup(v){document.getElementById('popup').classList.remove('show');if(window.__animResolve){let r=window.__animResolve;window.__animResolve=null;r(v)}}
 document.getElementById('pOk').onclick=()=>closeAnimPopup(true);document.getElementById('pCancel').onclick=()=>closeAnimPopup(false);
 function updateDots(){document.querySelectorAll('.screen').forEach((screen,idx)=>{const dots=screen.querySelectorAll('.dots span');dots.forEach((dot,i)=>dot.classList.toggle('active',i===Math.min(idx,dots.length-1)));});}
-function targetStep(dir){let n=cur+dir;if(n<1)n=1;if(n>total)n=total;if(!firstInstall&&n===4)n=dir>0?5:3;return n}
+function targetStep(dir){let n=cur+dir;if(n<1)n=1;if(n>total)n=total;if(!firstInstall){if(cur===3&&dir>0)return 6;if(cur===6&&dir<0)return 3;if(n===4||n===5)return dir>0?6:3;}return n}
 
 async function go(dir){
   // The forward arrow on the password screen must use the same validated
@@ -288,10 +288,9 @@ function createStars(){const c=document.getElementById('stars');for(let i=0;i<45
 function toggleEye(id,el){const inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';el.textContent='🙈'}else{inp.type='password';el.textContent='👁️'}}
 const volume=document.querySelector('.volume');if(volume){volume.value=60;volume.addEventListener('input',()=>{const m=document.getElementById('bg-music');m.volume=Number(volume.value)/100})}
 if(window.AndroidVault&&AndroidVault.isSessionUnlocked&&AndroidVault.isSessionUnlocked())location.replace('index.html');
-const loginRouteRequested=location.hash==='#login' && !firstInstall;
 document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
-if(loginRouteRequested){document.getElementById('s6').classList.add('active');cur=6;}
-else{document.getElementById('s1').classList.add('active');cur=1;}
+document.getElementById('s1').classList.add('active');
+cur=1;
 updateDots();
 </script>
 </body>

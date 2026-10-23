@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
             }
         });
         webView.addJavascriptInterface(new VaultBridge(), "AndroidVault");
-        webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html" + (prefs().contains("password_hash") ? "#login" : ""));
+        webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html");
     }
 
     @Override public void onBackPressed() {
@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
             long timeout = getAutoLockTimeoutMillis();
             if (timeout >= 0L && System.currentTimeMillis() - backgroundedAt >= timeout) {
                 sessionUnlocked = false;
-                webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html#login");
+                webView.loadUrl("https://appassets.androidplatform.net/assets/animations.html");
             }
         }
         prefs().edit().remove("session_backgrounded_at").apply();
@@ -429,10 +429,13 @@ public class MainActivity extends Activity {
     }
 
     private void seedSampleFiles(){
+        // Migrate the old bundled audio samples before ensuring the current sample set.
+        // Content hashes prevent this cleanup from deleting user audio with the same filename.
+        migrateSampleSoundFiles();
         // Do not use a one-time preference as the only guard: an earlier APK may have
         // set it before the sample assets were packaged. Ensure every missing sample
         // exists on every launch, without overwriting user files already in the vault.
-        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","sound4.mp3","sound5.mp3","sound6.mp3","About.pdf","video1.mp4","video2.mp4","video3.mp4"};
+        String[] samples={"image1.jpg","image2.jpg","image3.jpg","sound1.mp3","sound2.mp3","sound3.mp3","About.pdf","video1.mp4","video2.mp4","video3.mp4"};
         for(String name:samples){
             File out=new File(vaultRoot,name);
             if(out.isFile() && out.length()>0) continue;
@@ -451,6 +454,59 @@ public class MainActivity extends Activity {
         new File(vaultRoot,"Work").mkdirs();
         prefs().edit().putBoolean("sample_files_seeded_v2",true).apply();
     }
+
+    private void migrateSampleSoundFiles(){
+        // SHA-256 values of the OLD shipped sample files. Only exact old samples are removed/renamed;
+        // user audio files with the same names but different contents are preserved.
+        removeLegacySampleSoundIfMatching("sound2.mp3", "2ad044608504eded44b9df35a6ceb6044b024a6f64abd5343ce2b7acd27a9b25");
+        removeLegacySampleSoundIfMatching("sound3.mp3", "8253f70b8b02c43d90f5c295cd81a10578709d17c443233005ade3e59271626d");
+        removeLegacySampleSoundIfMatching("sound6.mp3", "7cd268305ba6efe3a70fcb3220ef60486c2d9af24e3ec4057debb0d497c62571");
+        moveLegacySampleSoundIfMatching("sound4.mp3", "sound2.mp3", "1eb0402071d1ac54856babc9ab8eb52eb743c48de34223138e5a288a91aa5cb9");
+        moveLegacySampleSoundIfMatching("sound5.mp3", "sound3.mp3", "7c829fc322ca810f09f50c0191fd0fda40e2aa17f8563e446c1a4f084325b1b5");
+    }
+
+    private void removeLegacySampleSoundIfMatching(String name, String expectedSha256){
+        File file = new File(vaultRoot, name);
+        if (file.isFile() && expectedSha256.equals(fileSha256(file))) {
+            file.delete();
+        }
+    }
+
+    private void moveLegacySampleSoundIfMatching(String oldName, String newName, String expectedSha256){
+        File source = new File(vaultRoot, oldName);
+        File destination = new File(vaultRoot, newName);
+        if (!source.isFile() || destination.exists() || !expectedSha256.equals(fileSha256(source))) return;
+        if (source.renameTo(destination)) return;
+
+        File temporary = new File(vaultRoot, "." + newName + ".migration");
+        try (InputStream in = new FileInputStream(source); OutputStream out = new FileOutputStream(temporary)) {
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            out.flush();
+            if (temporary.length() == source.length() && temporary.length() > 0 && temporary.renameTo(destination)) {
+                source.delete();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (temporary.exists()) temporary.delete();
+        }
+    }
+
+    private String fileSha256(File file){
+        try (InputStream in = new FileInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = in.read(buffer)) != -1) digest.update(buffer, 0, count);
+            StringBuilder result = new StringBuilder();
+            for (byte value : digest.digest()) result.append(String.format(Locale.US, "%02x", value));
+            return result.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
     private File sharedTempDir(){File d=new File(getCacheDir(),"shared");if(!d.exists())d.mkdirs();return d;}
     private File createSharedTempCopy(File original)throws IOException{
         File dir=sharedTempDir();File temp=new File(dir,System.currentTimeMillis()+"_"+UUID.randomUUID().toString().substring(0,8)+"_"+original.getName());

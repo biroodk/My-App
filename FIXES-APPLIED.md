@@ -24,4 +24,6 @@ A fresh Android APK build and on-device testing are still required to verify And
 - Added `install-page/`, Netlify configuration, and a Netlify Blobs visitor counter (once per 24 hours per browser ID).
 - GitHub Actions now publishes/replaces the stable `Folder-Locker.apk` release asset and increments Android versionCode/versionName using the workflow run number.
 - Games page share button now uses Android's native share sheet after `FOLDER_LOCKER_INSTALL_URL` is changed to the actual Netlify URL.
-- `sound4.mp3` was not included because it was not present in the supplied source ZIP/workspace.
+
+## Sample audio correction (2026-10-23)
+- Current bundled samples are `sound1.mp3`, `sound2.mp3`, and `sound3.mp3`. The latter two preserve the original audio bytes from `sound4.mp3` and `sound5.mp3` respectively. Legacy `sound2.mp3`, `sound3.mp3`, and `sound6.mp3` samples are excluded; existing vault sample copies are migrated by content hash.

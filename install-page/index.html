@@ -33,11 +33,10 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
 <section class="hero"><h2>Keep your files in your control.</h2><p>Install or update Folder Locker from one trusted link. Keep this page bookmarked to get the newest published build.</p></section>
 <div class="pills"><span class="pill">🔐 Private vault</span><span class="pill">⚡ Neon interface</span><span class="pill">📱 Android app</span></div>
 <a class="install" id="installButton" href="https://github.com/biroodk/My-App/releases/latest/download/Folder-Locker.apk">Install Folder Locker</a>
-<button class="secondary" id="confirmInstalled" type="button" style="display:none">I installed it successfully</button>
 
 <div class="status" id="status" role="status" aria-live="polite">Checking the latest version…</div>
-<div class="stats"><div class="stat"><span class="number" id="visits">—</span><span class="label">Number of Visits</span></div><div class="stat"><span class="number" id="downloads">—</span><span class="label">APK download requests</span></div></div>
-<div class="info"><b>How installation works</b><br>1. Tap Install or Update.<br>2. Android downloads the APK and may ask you to allow this browser to install unknown apps.<br>3. Open the downloaded APK and approve the installation/update.<br><br><span class="warning">Android does not allow a webpage to silently install a native APK. This page cannot independently verify that Android completed installation, so it will not falsely claim “Installed”.</span></div>
+<div class="stats"><div class="stat"><span class="number" id="visits">—</span><span class="label">Number of Visits</span></div><div class="stat"><span class="number" id="downloads">—</span><span class="label">Completed APK downloads</span></div></div>
+<div class="info"><b>How installation works</b><br>1. Tap Install or Update.<br>2. Android downloads the APK and may ask you to allow this browser to install unknown apps.<br>3. Open the downloaded APK and approve the installation/update.<br><br><span class="warning">Android does not allow a webpage to silently install a native APK. The counter is updated only after the full APK file has been received by the browser. The page cannot independently verify installation.</span></div>
 <div class="info"><b>Update notice</b><br><span id="updateMessage">This page checks the latest published release automatically.</span> If you have an older build, install the newer APK and approve the Android update prompt. Keep the same existing app installed so your vault data is not intentionally removed.</div>
 <div class="footer">Folder Locker • SecureVault • The latest APP Version can be published <span style="color: lime;">OR</span> Released any time "T".</div>
 <div class="download-overlay" id="downloadOverlay" role="dialog" aria-modal="true" aria-labelledby="downloadTitle">
@@ -49,7 +48,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    <b style="color:var(--cyan)">When the download finishes</b>
    <ol><li>Open your browser's Downloads list or your phone's Files app.</li><li>Tap <b>Folder-Locker.apk</b> (or the downloaded APK filename).</li><li>If prompted, allow this browser to install unknown apps, then return to the installer and tap <b>Install</b> or <b>Update</b>.</li><li>Wait for Android to finish, then tap <b>Done</b> or <b>Open</b>.</li></ol>
   </div>
-  <p class="download-note">For your security, Android requires you to approve installation. This webpage cannot install the APK itself or reliably detect whether a browser download completed or was cancelled.</p>
+  <p class="download-note">The counter records when this page successfully receives the entire APK response. The page cannot confirm that Android installed it or that a separate browser saved the file to disk.</p>
   <div class="dialog-actions">
    <button class="install" id="showInstallSteps" type="button">Show installation steps</button>
    <button class="secondary" id="closeDownloadDialog" type="button">Keep this page open</button>
@@ -70,8 +69,8 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    <button class="install" type="submit">Log in</button>
   </form>
   <form id="registerForm" class="community-form" hidden>
-   <label>Username<input id="registerUsername" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
-   <label>Password<input id="registerPassword" type="password" autocomplete="new-password" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
+   <label>Username<input id="registerUsername" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
+   <label>Password<input id="registerPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="new-password" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
    <label>Profile picture <span class="muted-small">(optional)</span><input id="registerAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
    <button class="install" type="submit">Create account</button>
   </form>
@@ -93,8 +92,8 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
   <details class="settings-box"><summary>⚙️ Account settings</summary>
    <form id="settingsForm" class="community-form">
     <label>Change username<input id="settingsUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="New username"></label>
-    <label>Change password<input id="settingsPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="New password (optional, at least 8 characters)"></label>
-    <label>Change profile picture <span class="muted-small">(max 6 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+    <label>Change password<input id="settingsPassword" type="password" minlength="4" maxlength="128" autocomplete="new-password" placeholder="New password (optional, at least 4 characters)"></label>
+    <label>Change profile picture <span class="muted-small">(max 3 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
     <div class="appearance-row"><label>Display name color<input id="settingsNameColor" type="color" value="#e9faff"></label><label>Profile badge <span class="muted-small">(admin only)</span><input id="settingsBadge" maxlength="18" placeholder="Admin / Owner"></label></div>
     <button class="secondary" type="submit">Save account settings</button>
    </form>
@@ -118,29 +117,42 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  const API='https://api.github.com/repos/biroodk/My-App/releases/latest';
  const APK='https://github.com/biroodk/My-App/releases/latest/download/Folder-Locker.apk';
  const KEY='folderLockerLastDownloadVersion';
- const INSTALLED_KEY='folderLockerUserConfirmedInstalledVersion';
  const $=id=>document.getElementById(id);
  let currentVersion='';
+ let currentDownloadUrl=APK;
+ let downloadBusy=false;
  function fmt(n){return Number(n||0).toLocaleString()}
  function setStatus(msg,isError=false){$('status').innerHTML=msg;$('status').classList.toggle('error',!!isError)}
  function visitorId(){try{let id=localStorage.getItem('folderLockerVisitorId');if(!id){id=(window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():('v-'+Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem('folderLockerVisitorId',id)}return id}catch(e){return 'temporary-'+Date.now()+'-'+Math.random().toString(36).slice(2)}}
- async function loadVisits(){try{const r=await fetch('/api/stats?visitorId='+encodeURIComponent(visitorId()),{cache:'no-store'});if(!r.ok)throw new Error('stats');const d=await r.json();$('visits').textContent=fmt(d.visits);$('downloads').textContent=fmt(d.downloadRequests||0)}catch(e){$('visits').textContent='—'}}
- async function loadRelease(){try{const r=await fetch(API,{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});if(!r.ok)throw new Error('release');const release=await r.json();currentVersion=release.name||release.tag_name||release.published_at||'latest';const asset=(release.assets||[]).find(a=>a.name==='Folder-Locker.apk');const last=localStorage.getItem(KEY);const installed=localStorage.getItem(INSTALLED_KEY);const isUpdate=installed?installed!==currentVersion:!!(last&&last!==currentVersion);const isConfirmedInstalled=installed===currentVersion;$('installButton').textContent=isUpdate?'Update Folder Locker':(isConfirmedInstalled?'Installed ✓':'Install Folder Locker');$('installButton').setAttribute('aria-label',isUpdate?'Update Folder Locker':(isConfirmedInstalled?'Installed':'Install Folder Locker'));$('installButton').href=asset&&asset.browser_download_url?asset.browser_download_url:APK;$('confirmInstalled').style.display=(last===currentVersion&&!isConfirmedInstalled)?'block':'none';$('confirmInstalled').textContent='I installed it successfully';$('updateMessage').textContent=isUpdate?'This app was upgraded new version is available update for the latest version':'The page checks the latest published release automatically.';setStatus('<strong>Latest release:</strong> '+String(currentVersion).replace(/[<>&]/g,'' )+' • '+((asset&&asset.updated_at)?new Date(asset.updated_at).toLocaleDateString():(release.published_at?new Date(release.published_at).toLocaleDateString():'latest build')));
- if(isConfirmedInstalled){$('installButton').removeAttribute('href');$('installButton').style.pointerEvents='none';$('installButton').style.opacity='.8'}else{$('installButton').style.pointerEvents='auto';$('installButton').style.opacity='1'}}catch(e){$('installButton').href=APK;setStatus('Could not check the release right now. You can still open the latest APK link or try again later.',true)}}
+ async function loadVisits(){try{const r=await fetch('/api/stats?visitorId='+encodeURIComponent(visitorId()),{cache:'no-store'});if(!r.ok)throw new Error('stats');const d=await r.json();$('visits').textContent=fmt(d.visits);$('downloads').textContent=fmt(d.completedDownloads||0)}catch(e){$('visits').textContent='—';$('downloads').textContent='—'}}
+ async function loadRelease(){try{const r=await fetch(API,{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});if(!r.ok)throw new Error('release');const release=await r.json();currentVersion=release.name||release.tag_name||release.published_at||'latest';const asset=(release.assets||[]).find(a=>a.name==='Folder-Locker.apk');currentDownloadUrl=asset&&asset.browser_download_url?asset.browser_download_url:APK;$('installButton').href=currentDownloadUrl;const last=localStorage.getItem(KEY);const isUpdate=!!(last&&last!==currentVersion);$('installButton').textContent=isUpdate?'Update Folder Locker':(last===currentVersion?'Download Folder Locker again':'Install Folder Locker');$('installButton').setAttribute('aria-label',$('installButton').textContent);$('updateMessage').textContent=isUpdate?'A newer release than your last completed download is available. Download and install the update in Android.':'The page checks the latest published release automatically.';setStatus('<strong>Latest release:</strong> '+String(currentVersion).replace(/[<>&]/g,'')+' • '+((asset&&asset.updated_at)?new Date(asset.updated_at).toLocaleDateString():(release.published_at?new Date(release.published_at).toLocaleDateString():'latest build')))}catch(e){currentDownloadUrl=APK;$('installButton').href=APK;setStatus('Could not check the release right now. You can still download the latest official APK directly; completion tracking may be unavailable.',true)}}
  const overlay=$('downloadOverlay');
- function openDownloadGuide(){
-   overlay.classList.add('open');
-   $('downloadTitle').textContent='APK download requested';
-   $('downloadDialogMessage').textContent='Your browser should now handle the official APK download. Check the browser download notification/list for progress; keep this page open so the next steps are ready.';
-   $('installNext').style.display='none';
-   $('showInstallSteps').textContent='Show installation steps';
-   setStatus('<strong>Download requested.</strong> Check your browser notification or Downloads list. When the APK is fully downloaded, open it and approve installation in Android.');
+ function showGuide(title,message,spinner=false){overlay.classList.add('open');$('downloadTitle').textContent=title;$('downloadDialogMessage').textContent=message;$('downloadSpinner').style.display=spinner?'block':'none';$('installNext').style.display='none';$('showInstallSteps').textContent='Show installation steps'}
+ async function downloadAPK(event){
+   event.preventDefault();if(downloadBusy)return;
+   downloadBusy=true;$('installButton').style.pointerEvents='none';$('installButton').style.opacity='.65';
+   const target=currentDownloadUrl||APK;
+   showGuide('Downloading Folder Locker APK','Receiving the complete APK file. Keep this page open until the download finishes.',true);
+   try{
+     const response=await fetch(target,{mode:'cors',cache:'no-store'});
+     if(!response.ok)throw new Error('The APK server returned '+response.status+'.');
+     const blob=await response.blob();
+     if(blob.size<100*1024)throw new Error('The returned file was too small to be the APK.');
+     const objectUrl=URL.createObjectURL(blob);
+     const saveLink=document.createElement('a');saveLink.href=objectUrl;saveLink.download='Folder-Locker.apk';saveLink.style.display='none';document.body.appendChild(saveLink);saveLink.click();saveLink.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),120000);
+     try{if(currentVersion)localStorage.setItem(KEY,currentVersion)}catch(e){}
+     $('downloadSpinner').style.display='none';$('downloadTitle').textContent='APK received';$('downloadDialogMessage').textContent='The full APK response was received by your browser and the save action was started. Check Downloads for Folder-Locker.apk, then open it to install or update.';$('installNext').style.display='block';$('showInstallSteps').textContent='Hide installation steps';
+     try{const counted=await fetch('/api/stats?action=download-complete',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',cache:'no-store'});if(counted.ok){const data=await counted.json();if(Number.isFinite(Number(data.completedDownloads)))$('downloads').textContent=fmt(data.completedDownloads);setStatus('<strong>Completed APK download recorded.</strong> The complete APK was received by your browser. Open Downloads to install it.')}else{setStatus('<strong>APK received.</strong> The completed-download counter could not be updated this time.',true)}}catch(e){setStatus('<strong>APK received.</strong> The completed-download counter could not be updated this time.',true)}
+   }catch(error){
+     $('downloadSpinner').style.display='none';$('downloadTitle').textContent='Opening official APK link';$('downloadDialogMessage').textContent='This browser did not allow the install page to read the whole APK response for completion tracking. The official direct download will open instead. Because completion cannot be confirmed on this fallback, the counter will not be increased.';
+     setStatus('Completion tracking is unavailable in this browser. Opening the official direct APK link; this fallback may not increase the counter.',true);
+     const direct=document.createElement('a');direct.href=target;direct.target='_self';direct.rel='noopener';direct.style.display='none';document.body.appendChild(direct);direct.click();direct.remove();
+   }finally{downloadBusy=false;$('installButton').style.pointerEvents='auto';$('installButton').style.opacity='1'}
  }
- $('installButton').addEventListener('click',()=>{if(currentVersion){fetch('/api/stats?action=download',{method:'POST',cache:'no-store',keepalive:true}).then(r=>r.ok?r.json():null).then(d=>{if(d&&Number.isFinite(Number(d.downloadRequests)))$('downloads').textContent=fmt(d.downloadRequests)}).catch(()=>{});try{localStorage.setItem(KEY,currentVersion);localStorage.removeItem(INSTALLED_KEY)}catch(e){}$('confirmInstalled').style.display='block';$('installButton').textContent='Download requested';openDownloadGuide();} });
- $('showInstallSteps').addEventListener('click',()=>{const panel=$('installNext');const show=panel.style.display!=='block';panel.style.display=show?'block':'none';$('showInstallSteps').textContent=show?'Hide installation steps':'Show installation steps';if(show){$('downloadTitle').textContent='Install Folder Locker';$('downloadSpinner').style.display='none';}});
+ $('installButton').addEventListener('click',downloadAPK);
+ $('showInstallSteps').addEventListener('click',()=>{const panel=$('installNext');const show=panel.style.display!=='block';panel.style.display=show?'block':'none';$('showInstallSteps').textContent=show?'Hide installation steps':'Show installation steps';if(show){$('downloadTitle').textContent='Install Folder Locker';$('downloadSpinner').style.display='none'}});
  $('closeDownloadDialog').addEventListener('click',()=>overlay.classList.remove('open'));
  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open')});
- $('confirmInstalled').addEventListener('click',()=>{if(!currentVersion)return;try{localStorage.setItem(INSTALLED_KEY,currentVersion);localStorage.setItem(KEY,currentVersion)}catch(e){}$('installButton').textContent='Installed ✓';$('installButton').removeAttribute('href');$('installButton').style.pointerEvents='none';$('installButton').style.opacity='.8';$('confirmInstalled').style.display='none';$('updateMessage').textContent='Installed version confirmed by you. This page will offer Update when a newer release is published.';setStatus('<strong>Installed ✓</strong> You confirmed that Android completed the installation. The webpage cannot verify this automatically.')} );
  loadVisits();loadRelease();
 })();
 </script>
@@ -152,6 +164,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  const tokenKey='folderLockerCommunityToken';
  let token=localStorage.getItem(tokenKey)||'';
  let currentUser=null;
+ let authMode='login';
  let currentPage=1;
  let pageHasMore=false;
  let totalPosts=0;
@@ -169,18 +182,17 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    if(!file)return;
    const allowed=['image/jpeg','image/png','image/webp','image/gif'];
    if(!allowed.includes(file.type))throw new Error('Choose a JPG, PNG, WEBP, or GIF image.');
-   if(file.size<1||file.size>6*1024*1024)throw new Error('Profile pictures must be no larger than 6 MB.');
+   if(file.size<1||file.size>3*1024*1024)throw new Error('Profile pictures must be no larger than 3 MB.');
  }
  async function uploadAvatar(file){
    if(!file)return null;
    validateAvatarFile(file);
-   const signed=await api('createAvatarUpload',{mimeType:file.type,size:file.size});
-   const uploaded=await fetch(signed.signedUrl,{method:'PUT',headers:{'x-upsert':'false','Content-Type':file.type},body:file});
-   if(!uploaded.ok)throw new Error('The profile picture upload failed. Please try again.');
-   const result=await api('profile',{avatarUrl:signed.avatarUrl});
+   const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Could not read the profile picture.'));reader.readAsDataURL(file)});
+   const result=await api('uploadAvatar',{mimeType:file.type,dataUrl});
    return result.user;
  }
  function showAuth(login=true){
+   authMode=login?'login':'register';
    $('authPanel').hidden=false;$('communityApp').hidden=true;
    $('loginForm').hidden=!login;$('registerForm').hidden=login;
    $('showLogin').classList.toggle('active',login);$('showRegister').classList.toggle('active',!login);
@@ -197,9 +209,9 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
      pageHasMore=!!d.hasMore;totalPosts=Number(d.total||0);currentPage=Number(d.page||currentPage);
      renderAnnouncements(d.announcements||[]);
      if(d.user){showApp(d.user);renderPosts(d.posts||[]);notice('You are signed in. Posts and replies are shared with other visitors.','success');await loadAdminDashboard()}
-     else {token='';localStorage.removeItem(tokenKey);currentUser=null;showAuth(true);renderPosts(d.posts||[]);notice('Create an account or log in to publish, like, and reply.')}
+     else {token='';localStorage.removeItem(tokenKey);currentUser=null;showAuth(authMode==='login');renderPosts(d.posts||[]);notice('Create an account or log in to publish, like, and reply.')}
      renderPagination();
-   }catch(e){showAuth(true);notice(e.message+' Please try again when the site is online.','error')}
+   }catch(e){showAuth(authMode==='login');notice(e.message+' Please try again when the site is online.','error')}
  }
  function renderPagination(){
    const nav=$('postPagination');
@@ -218,7 +230,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  }
  async function loadAdminDashboard(){
    if(currentUser?.role!=='admin')return;
-   try{const [d,siteStats]=await Promise.all([api('adminDashboard'),fetch('/api/stats?admin=1',{headers:{Authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||'Could not load website statistics.');return x})]);const allStats={visits:siteStats.visits,downloadRequests:siteStats.downloadRequests,...(d.stats||{})};$('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<div class="admin-stat"><b>${fmt(v)}</b><span>${esc(k)}</span></div>`).join('');$('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<div class="admin-user"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · ${esc(when(u.createdAt))}</span></span></div>`).join('')||'<p class="muted-small">No users yet.</p>'}catch(e){notice(e.message,'error')}
+   try{const [d,siteStats]=await Promise.all([api('adminDashboard'),fetch('/api/stats?admin=1',{headers:{Authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||'Could not load website statistics.');return x})]);const allStats={visits:siteStats.visits,completedDownloads:siteStats.completedDownloads,...(d.stats||{})};$('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<div class="admin-stat"><b>${fmt(v)}</b><span>${esc(k)}</span></div>`).join('');$('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<div class="admin-user"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · ${esc(when(u.createdAt))}</span></span></div>`).join('')||'<p class="muted-small">No users yet.</p>'}catch(e){notice(e.message,'error')}
  }
  function renderPosts(posts){
    const host=$('postsList');

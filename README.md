@@ -32,3 +32,12 @@ The existing Home and Games pages are retained. The supplied Files page architec
 - Device Credential (phone PIN/pattern/password) is now a real BiometricPrompt fallback on Android 14+.
 - Settings Device Credential switch is connected to native storage/security state.
 - Premium alert JavaScript syntax and animation reset were fixed.
+
+## Follow-up repair set (2026-10-23)
+- Welcome/onboarding screens replay from the first animation whenever the app launches. Existing users pass the first three animation screens, then continue directly to password login; only the first-time registration and vault-securing progress are skipped after a password is created.
+- All category pages use the same multi-select “Move selected files back to phone storage” flow as the main Files page. Vault copies are removed only after native export reports verified copies.
+- Community registration preserves the chosen Register tab while the initial API request finishes, preventing the initial online response from unexpectedly changing the form and dismissing the keyboard. Username/password fields also disable autocapitalization and autocorrect.
+- The community stores records and profile pictures in Netlify Blobs; no Supabase functions, secrets, migration files, or bundled Supabase archive remain in this source package.
+- The install page counts a download only after it receives a complete APK response. A direct-download fallback is not counted when the browser prevents completion tracking; this is not an Android-installation counter.
+
+See `INSTALL-PAGE-SETUP.md` for the current storage model, optional administrator setup, limits, and live deployment checks. Changes in this package still need to be deployed to Netlify and built/tested as a new APK before they affect a live website or installed app.
