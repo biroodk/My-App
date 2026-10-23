@@ -186,8 +186,8 @@ h1{font-size:28px;text-shadow:0 0 10px #00d5ff,0 0 20px #6a5cff;margin-bottom:10
   <div class="sub">This password protects your<br>private files.</div>
   
  
-  <div class="inputBox"><span>🔒</span><input type="password" id="p1" placeholder="Create password"><span class="eye" onclick="toggleEye('p1',this)">👁️</span></div>
-  <div class="inputBox"><span>🔒</span><input type="password" id="p2" placeholder="Confirm password"><span class="eye" onclick="toggleEye('p2',this)">👁️</span></div>
+  <div class="inputBox"><span>🔒</span><input type="password" id="p1" placeholder="Create password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" inputmode="text"><span class="eye" onclick="toggleEye('p1',this)">👁️</span></div>
+  <div class="inputBox"><span>🔒</span><input type="password" id="p2" placeholder="Confirm password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" inputmode="text"><span class="eye" onclick="toggleEye('p2',this)">👁️</span></div>
   <button style="width:88%;height:48px;margin-top:18px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:14px;font-weight:800;cursor:pointer;box-shadow:0 0 20px #0ff" onclick="createVault()">Create Secure Vault</button>
   <div class="btn-prev" onclick="go(-1)">‹</div>
   <div class="btn-next" onclick="go(1)">›</div>
@@ -212,7 +212,7 @@ h1{font-size:28px;text-shadow:0 0 10px #00d5ff,0 0 20px #6a5cff;margin-bottom:10
   <div class="logoBox" style="width:80px;height:80px">🔒<div class="sparkle">✨</div></div>
   <h1 style="margin-top:16px;font-size:22px">Welcome Back</h1>
   <div class="sub">Login with password or fingerprint</div>
-  <div class="inputBox"><span>🔒</span><input type="password" id="loginP" placeholder="Enter vault password"></div>
+  <div class="inputBox"><span>🔒</span><input type="password" id="loginP" placeholder="Enter vault password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" inputmode="text"></div>
   <button style="width:88%;height:48px;margin-top:16px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:14px;font-weight:800;cursor:pointer" onclick="login()">Unlock Vault</button>
   <div onclick="fingerPrint()" style="margin-top:18px;width:66px;height:66px;border-radius:50%;background:rgba(0,255,255,0.1);border:2px solid #0ff;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;box-shadow:0 0 20px #0ff">👆</div>
   <div class="sub" style="color:#0ff;margin-top:6px">Tap for fingerprint</div>
@@ -283,7 +283,20 @@ async function loginFromNext(){await login()}
 function fingerPrint(){if(!window.AndroidVault)return;const fp=AndroidVault.isFingerprintEnabled&&AndroidVault.isFingerprintEnabled();const dc=AndroidVault.isDeviceCredentialEnabled&&AndroidVault.isDeviceCredentialEnabled();if(!fp&&!dc){showPopup('Fingerprint is  disabled','Enable Fingerprint Unlock or Device Credential in Settings first.','⚠️');return}if(AndroidVault.authenticateBiometric)AndroidVault.authenticateBiometric()}
 function onNativeBiometric(ok){if(ok){AndroidVault.unlockSession();showPopup('Fingerprint accepted','Opening Folder Locker home.','✅').then(()=>location.href='index.html')}else showPopup('Fingerprint failed','Use your registered password or your phone unlock method.','❌')}
 function onNativeSecurityMessage(code){if(code==='fingerprintDisabled')showPopup('Fingerprint was disabled','Fingerprint was disabled use registered password or our phone unlock method.','⚠️')}
-let startX=0;const section=document.querySelector('section');section.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});section.addEventListener('touchend',e=>{let dx=e.changedTouches[0].clientX-startX;if(dx<-50)go(1);if(dx>50)go(-1)},{passive:true});
+let startX=0,trackingOnboardingSwipe=false;const section=document.querySelector('section');
+section.addEventListener('touchstart',e=>{
+  // Never interpret a touch/drag on password fields, eye controls, or buttons as a page swipe.
+  const target=e.target&&e.target.closest?e.target.closest('input,textarea,button,.inputBox,.eye,.btn-next,.btn-prev'):null;
+  trackingOnboardingSwipe=!target;
+  if(trackingOnboardingSwipe&&e.touches.length)startX=e.touches[0].clientX;
+},{passive:true});
+section.addEventListener('touchend',e=>{
+  if(!trackingOnboardingSwipe){trackingOnboardingSwipe=false;return;}
+  trackingOnboardingSwipe=false;
+  if(!e.changedTouches.length)return;
+  let dx=e.changedTouches[0].clientX-startX;
+  if(dx<-50)go(1);if(dx>50)go(-1);
+},{passive:true});
 function createStars(){const c=document.getElementById('stars');for(let i=0;i<45;i++){const s=document.createElement('div');s.className='star';const size=Math.random()*2+1;s.style.width=size+'px';s.style.height=size+'px';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.animationDelay=(Math.random()*2)+'s';s.style.animationDuration=(1+Math.random()*2)+'s';c.appendChild(s)}}createStars();
 function toggleEye(id,el){const inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';el.textContent='🙈'}else{inp.type='password';el.textContent='👁️'}}
 const volume=document.querySelector('.volume');if(volume){volume.value=60;volume.addEventListener('input',()=>{const m=document.getElementById('bg-music');m.volume=Number(volume.value)/100})}

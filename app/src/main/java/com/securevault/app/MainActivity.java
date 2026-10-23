@@ -44,6 +44,11 @@ public class MainActivity extends Activity {
         seedSampleFiles();
         cleanExpiredSharedFiles();
         webView = new WebView(this);
+        // Password suggestions can cover the onboarding fields and may steal WebView focus.
+        // Disable Android Autofill for this in-app WebView; password storage remains in app prefs.
+        if (Build.VERSION.SDK_INT >= 26) {
+            webView.setImportantForAutofill(android.view.View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+        }
         setContentView(webView);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true);
@@ -429,6 +434,8 @@ public class MainActivity extends Activity {
     }
 
     private void seedSampleFiles(){
+        // Replace the exact old bundled video only; preserve user-owned video1.mp4 files.
+        migrateLegacySampleVideoIfMatching("a79d8ee8c13eda555522c5c7efa8f90dc63f8d9fd75b7fcde0fda537ade3461b");
         // Migrate the old bundled audio samples before ensuring the current sample set.
         // Content hashes prevent this cleanup from deleting user audio with the same filename.
         migrateSampleSoundFiles();
@@ -453,6 +460,32 @@ public class MainActivity extends Activity {
         new File(vaultRoot,"Personal").mkdirs();
         new File(vaultRoot,"Work").mkdirs();
         prefs().edit().putBoolean("sample_files_seeded_v2",true).apply();
+    }
+
+    private void migrateLegacySampleVideoIfMatching(String oldSampleSha256){
+        File current = new File(vaultRoot, "video1.mp4");
+        if (!current.isFile() || !oldSampleSha256.equals(fileSha256(current))) return;
+        File temporary = new File(vaultRoot, ".video1.mp4.migration");
+        File previous = new File(vaultRoot, ".video1.mp4.previous-sample");
+        if (previous.exists()) return; // Leave an earlier interrupted migration untouched.
+        try (InputStream in = getAssets().open("video1.mp4");
+             OutputStream out = new FileOutputStream(temporary)) {
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            out.flush();
+            if (!temporary.isFile() || temporary.length() <= 0) { temporary.delete(); return; }
+            if (!current.renameTo(previous)) { temporary.delete(); return; }
+            if (temporary.renameTo(current)) {
+                previous.delete();
+            } else {
+                previous.renameTo(current);
+                temporary.delete();
+            }
+        } catch (Exception ignored) {
+            if (temporary.exists()) temporary.delete();
+            if (!current.exists() && previous.exists()) previous.renameTo(current);
+        }
     }
 
     private void migrateSampleSoundFiles(){

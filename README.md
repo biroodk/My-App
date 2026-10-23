@@ -37,7 +37,22 @@ The existing Home and Games pages are retained. The supplied Files page architec
 - Welcome/onboarding screens replay from the first animation whenever the app launches. Existing users pass the first three animation screens, then continue directly to password login; only the first-time registration and vault-securing progress are skipped after a password is created.
 - All category pages use the same multi-select “Move selected files back to phone storage” flow as the main Files page. Vault copies are removed only after native export reports verified copies.
 - Community registration preserves the chosen Register tab while the initial API request finishes, preventing the initial online response from unexpectedly changing the form and dismissing the keyboard. Username/password fields also disable autocapitalization and autocorrect.
-- The community stores records and profile pictures in Netlify Blobs; no Supabase functions, secrets, migration files, or bundled Supabase archive remain in this source package.
+- The original Netlify Functions remain as a legacy fallback only. The updated Community deployment uses the Vercel Node API routes plus Supabase Postgres/Storage; follow `SUPABASE-VERCEL-SETUP.md` for the active setup path.
 - The install page counts a download only after it receives a complete APK response. A direct-download fallback is not counted when the browser prevents completion tracking; this is not an Android-installation counter.
 
-See `INSTALL-PAGE-SETUP.md` for the current storage model, optional administrator setup, limits, and live deployment checks. Changes in this package still need to be deployed to Netlify and built/tested as a new APK before they affect a live website or installed app.
+See `SUPABASE-VERCEL-SETUP.md` for current Community deployment steps. `INSTALL-PAGE-SETUP.md` documents the legacy Netlify deployment. These source changes do not become live until the website is deployed to Vercel and a new Android APK is built and tested.
+
+
+## Updated Community deployment (Supabase + Vercel)
+
+See [`SUPABASE-VERCEL-SETUP.md`](SUPABASE-VERCEL-SETUP.md) for the database migration and deployment steps. The source now contains Vercel-compatible `/api/community` and `/api/stats` endpoints so the Community does not depend on Netlify Functions after deployment.
+
+## Replacement sample video
+
+After copying this source into the project on your phone, run `bash tools/use-download-video.sh "$HOME/storage/downloads/video1.mp4"` in Termux before building. The script uses your own video and the app safely migrates the old sample only if its SHA-256 matches the exact previous bundled sample.
+
+## Updating without clearing local vault data
+
+Install an APK as an update over the existing app and do not uninstall the current version. Android retains the private vault and preferences on ordinary updates when application ID and signing certificate match. The app source does not clear the vault during upgrades.
+
+**APK signing note:** The workflow currently produces a debug APK without an explicitly stored, stable keystore. Keep the installed app and its data; do not uninstall it if Android refuses an update. See `CHANGES-20261023-FINAL-FIX.md` before changing signing keys.

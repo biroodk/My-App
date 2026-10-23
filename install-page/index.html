@@ -63,22 +63,22 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  <div id="communityNotice" class="community-notice" role="status" aria-live="polite">Connecting to the community…</div>
  <div id="authPanel" class="community-panel">
   <div class="community-tabs"><button type="button" class="community-tab active" id="showLogin">Log in</button><button type="button" class="community-tab" id="showRegister">Create account</button></div>
-  <form id="loginForm" class="community-form">
+  <form id="loginForm" class="community-form" autocomplete="off">
    <label>Username<input id="loginUsername" autocomplete="username" minlength="3" maxlength="24" required placeholder="Your username"></label>
-   <label>Password<input id="loginPassword" type="password" autocomplete="current-password" minlength="4" required placeholder="At least 4 characters"></label>
+   <label>Password<input id="loginPassword" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" minlength="4" required placeholder="At least 4 characters"></label>
    <button class="install" type="submit">Log in</button>
   </form>
-  <form id="registerForm" class="community-form" hidden>
+  <form id="registerForm" class="community-form" autocomplete="off" hidden>
    <label>Username<input id="registerUsername" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
-   <label>Password<input id="registerPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="new-password" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
+   <label>Password<input id="registerPassword" name="communitySecret" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" inputmode="text" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
    <label>Profile picture <span class="muted-small">(optional)</span><input id="registerAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
    <button class="install" type="submit">Create account</button>
   </form>
   <details class="system-setup"><summary>First-time System administrator setup</summary>
-   <p class="muted-small">Only works before an administrator exists and requires the one-time setup secret configured by the site owner in Netlify. Never share that secret.</p>
-   <form id="systemSetupForm" class="community-form">
+   <p class="muted-small">Only works before an administrator exists and requires the one-time setup secret configured by the site owner in Vercel. Never share that secret.</p>
+   <form id="systemSetupForm" class="community-form" autocomplete="off">
     <label>One-time setup secret<input id="systemSetupSecret" type="password" autocomplete="off" required></label>
-    <label>Strong System password<input id="systemSetupPassword" type="password" minlength="16" autocomplete="new-password" required placeholder="At least 16 characters"></label>
+    <label>Strong System password<input id="systemSetupPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="At least 16 characters"></label>
     <button class="secondary" type="submit">Create System administrator</button>
    </form>
   </details>
@@ -92,7 +92,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
   <details class="settings-box"><summary>⚙️ Account settings</summary>
    <form id="settingsForm" class="community-form">
     <label>Change username<input id="settingsUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="New username"></label>
-    <label>Change password<input id="settingsPassword" type="password" minlength="4" maxlength="128" autocomplete="new-password" placeholder="New password (optional, at least 4 characters)"></label>
+    <label>Change password<input id="settingsPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="New password (optional, at least 4 characters)"></label>
     <label>Change profile picture <span class="muted-small">(max 3 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
     <div class="appearance-row"><label>Display name color<input id="settingsNameColor" type="color" value="#e9faff"></label><label>Profile badge <span class="muted-small">(admin only)</span><input id="settingsBadge" maxlength="18" placeholder="Admin / Owner"></label></div>
     <button class="secondary" type="submit">Save account settings</button>
@@ -194,8 +194,14 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  function showAuth(login=true){
    authMode=login?'login':'register';
    $('authPanel').hidden=false;$('communityApp').hidden=true;
-   $('loginForm').hidden=!login;$('registerForm').hidden=login;
+   // Avoid toggling a focused form's visibility when an asynchronous response arrives.
+   if($('loginForm').hidden!==!login)$('loginForm').hidden=!login;
+   if($('registerForm').hidden!==login)$('registerForm').hidden=login;
    $('showLogin').classList.toggle('active',login);$('showRegister').classList.toggle('active',!login);
+ }
+ function isEditingAuthField(){
+   const id=document.activeElement?.id||'';
+   return ['loginUsername','loginPassword','registerUsername','registerPassword','registerAvatar','systemSetupSecret','systemSetupPassword'].includes(id);
  }
  function showApp(user){
    currentUser=user;$('authPanel').hidden=true;$('communityApp').hidden=false;
@@ -209,9 +215,9 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
      pageHasMore=!!d.hasMore;totalPosts=Number(d.total||0);currentPage=Number(d.page||currentPage);
      renderAnnouncements(d.announcements||[]);
      if(d.user){showApp(d.user);renderPosts(d.posts||[]);notice('You are signed in. Posts and replies are shared with other visitors.','success');await loadAdminDashboard()}
-     else {token='';localStorage.removeItem(tokenKey);currentUser=null;showAuth(authMode==='login');renderPosts(d.posts||[]);notice('Create an account or log in to publish, like, and reply.')}
+     else {token='';localStorage.removeItem(tokenKey);currentUser=null;if(!isEditingAuthField())showAuth(authMode==='login');renderPosts(d.posts||[]);notice('Create an account or log in to publish, like, and reply.')}
      renderPagination();
-   }catch(e){showAuth(authMode==='login');notice(e.message+' Please try again when the site is online.','error')}
+   }catch(e){if(!isEditingAuthField())showAuth(authMode==='login');notice(e.message+' Please try again when the site is online.','error')}
  }
  function renderPagination(){
    const nav=$('postPagination');

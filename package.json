@@ -1,9 +1,9 @@
 {
-  "name": "folder-locker-install-page",
+  "name": "folder-locker-community-site",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
-    "build": "echo 'Folder Locker install page is static; Netlify Functions are deployed separately.'"
+    "build": "node -e \"console.log('Folder Locker static install site is ready for Vercel build.')\""
   },
   "dependencies": {
     "@netlify/blobs": "^10.5.0"

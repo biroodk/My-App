@@ -1,3 +1,5 @@
+> **Legacy Netlify deployment only:** The sections below describe the old Netlify Functions/Blobs setup and are kept for reference. For the updated deployment that avoids Netlify, follow [`SUPABASE-VERCEL-SETUP.md`](SUPABASE-VERCEL-SETUP.md), which uses Vercel Node API routes with Supabase Postgres/Storage. Do not delete the older Netlify backend until any existing Community data has been exported or deliberately retired.
+
 # Folder Locker install page and community setup
 
 The install page is a static site in `install-page/`. `netlify.toml` publishes that folder and deploys the functions in `netlify/functions/`. The routes `/api/community` and `/api/stats` are redirected to those functions.
