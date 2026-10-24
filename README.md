@@ -56,3 +56,29 @@ After copying this source into the project on your phone, run `bash tools/use-do
 Install an APK as an update over the existing app and do not uninstall the current version. Android retains the private vault and preferences on ordinary updates when application ID and signing certificate match. The app source does not clear the vault during upgrades.
 
 **APK signing note:** The workflow currently produces a debug APK without an explicitly stored, stable keystore. Keep the installed app and its data; do not uninstall it if Android refuses an update. See `CHANGES-20261023-FINAL-FIX.md` before changing signing keys.
+
+
+## Community UX and session update (2026-10-24)
+- The install page links to a separate `/community.html` page, so the community experience no longer contains the APK install-page content.
+- The community feed previews up to three comments and one reply per comment. **Read more** opens one post with its full comment/reply thread; **Back to posts** returns to the feed.
+- Community post text and comment/reply text are larger for phone readability.
+- Server-side community sessions expire after two hours. Expired sessions are returned to the login form.
+- The app's Games-page online/share link now uses `https://folder-locker-my-first-app.vercel.app/`.
+
+## First system administrator account
+
+Preferred setup method (system password is never sent in the provisioning request):
+
+1. In Termux, generate a strong password:
+   ```sh
+   openssl rand -base64 30 | tr -d '\\n'; printf '\\n'
+   ```
+2. Copy the generated password privately. In Vercel → Project → Settings → Environment Variables, set `SYSTEM_ADMIN_PASSWORD` to that exact value for Production, then redeploy.
+3. After the deployment completes, run:
+   ```sh
+   bash tools/provision-system-admin.sh "https://folder-locker-my-first-app.vercel.app"
+   ```
+   The script requests one-time account creation without transmitting the password. A successful response names the account `FolderLockerAdmin`.
+4. Open `/community.html` and use the normal **Log in** form with username `FolderLockerAdmin` and the generated password. Administrator-only features remain available.
+
+The password must be at least 20 characters and include uppercase, lowercase, a number, and a symbol. Keep it private and never commit it to Git. If the system account already exists, the endpoint will not overwrite its password or role. The older one-time `SYSTEM_SETUP_SECRET` form remains available as a fallback for an account that has not yet been created.

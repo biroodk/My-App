@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#020a1e">
+<meta name="description" content="Folder Locker Community — posts, comments, replies, and likes.">
+<title>Folder Locker — Community</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<style>
+:root{color-scheme:dark;--bg:#020a1e;--cyan:#1ce3ff;--blue:#0f8cff;--muted:#8aa0c8;--panel:#071532}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background: #000095;color:#eef8ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:22px 14px 36px}
+main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-radius:26px;padding:22px;background:linear-gradient(145deg,rgba(7,21,50,.96),rgba(2,10,30,.97));box-shadow:0 0 26px rgba(28,227,255,1),0 0 26px rgba(28,227,255,1),0 0 25px rgba(15,140,255,.08)}
+.brand{display:flex;align-items:center;gap:14px}.brand img{width:76px;height:76px;object-fit:cover;border-radius:20px;border:1px solid var(--cyan);box-shadow:0 0 22px rgba(28,227,255,.28)}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:11px}.brand h1{font-size:26px;line-height:1.1;margin:5px 0}.brand p{margin:0;color:var(--muted);font-size:12px}
+.hero{margin:24px 0 18px;text-align:center}.hero h2{font-size:25px;margin:0 0 9px;color:var(--cyan);text-shadow:0 0 14px rgba(28,227,255,.3)}.hero p{color:#b9cbed;line-height:1.6;font-size:14px;margin:0}
+.pills{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:17px 0}.pill{border:1px solid rgba(28,227,255,.25);background:rgba(28,227,255,.07);border-radius:999px;padding:7px 11px;color:#cdeeff;font-size:11px}
+.install{display:block;width:100%;border:0;border-radius:15px;padding:16px 18px;margin-top:10px;background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;font-size:16px;font-weight:900;text-align:center;text-decoration:none;box-shadow:0 0 22px rgba(15,140,255,.28);cursor:pointer}.install:disabled{opacity:.6}.secondary{display:block;width:100%;border:1px solid rgba(28,227,255,.35);border-radius:13px;padding:12px;margin-top:10px;background:rgba(28,227,255,.06);color:#dff8ff;text-decoration:none;text-align:center;font-weight:700}
+.status{min-height:42px;padding:11px 12px;margin-top:14px;border:1px solid rgba(28,227,255,.22);border-radius:12px;color:var(--muted);font-size:12px;line-height:1.5;background:rgba(0,0,0,.16)}.status strong{color:var(--cyan)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.stat{border:1px solid rgba(28,227,255,.2);border-radius:14px;padding:14px;text-align:center;background:rgba(0,0,0,.16)}.stat .number{display:block;font-size:24px;font-weight:900;color:var(--cyan);font-variant-numeric:tabular-nums}.stat .label{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.info{margin-top:18px;padding:14px;border-radius:14px;background:rgba(15,140,255,.07);border:1px solid rgba(15,140,255,.24);font-size:12px;line-height:1.65;color:#bfd0ed}.info b{color:#e9faff}.warning{color:#ffd98a}.footer{text-align:center;color:#00ffff;font-size:10px;margin:15px 0 0;line-height:1.6}.error{color:#ffadad}
+/* Community */
+.community{margin-top:20px;padding:16px;border:1px solid rgba(28,227,255,.3);border-radius:19px;background:linear-gradient(150deg,rgba(15,140,255,.9),rgba(0,0,0,.17));box-shadow:inset 0 0 18px rgba(28,227,255,.5)}
+.community-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.community-head h2{margin:5px 0;color:var(--cyan);font-size:21px}.community-head p{margin:0;color:#b9cbed;font-size:12px;line-height:1.5}.community-live{white-space:nowrap;font-size:10px;color:#8cffc3;border:1px solid #0ff;border-radius:99px;padding:6px 8px}
+.community-notice{margin:13px 0;padding:10px 12px;border:1px solid rgba(28,227,255,.18);border-radius:11px;color:#a9c3e8;font-size:12px;line-height:1.5}.community-notice.error{color:#ffb1b1;border-color:rgba(255,100,100,.4)}.community-notice.success{color:#9dffd0;border-color:rgba(100,255,180,.35)}.community-panel,.community-form{display:grid;gap:11px}.community-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.community-tab,.tiny-btn{border:1px solid rgba(28,227,255,.25);background:rgba(28,227,255,.06);color:#dff8ff;border-radius:10px;padding:10px;font:inherit;font-size:12px;font-weight:750}.community-tab.active{background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;border-color:transparent}
+.community-form label{display:grid;gap:6px;color:#cce8ff;font-size:12px;font-weight:700}.community-form input,.community-form textarea{width:100%;min-width:0;border:1px solid rgba(28,227,255,.25);border-radius:10px;background:#020b20;color:#f2fbff;padding:11px;font:inherit;font-size:13px;outline:none}.community-form input:focus,.community-form textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(28,227,255,.1)}.community-form input[type=file]{font-size:11px}.community-form textarea{resize:vertical;line-height:1.5}.community-form [hidden],[hidden]{display:none!important}.muted-small{font-size:10px;color:var(--muted);font-weight:400}.community-user{display:flex;align-items:center;gap:10px;margin:12px 0;padding:10px;border-radius:12px;background:rgba(0,0,0,.18)}.community-user img,.post-avatar{width:42px;height:42px;object-fit:cover;border-radius:50%;border:1px solid rgba(28,227,255,.55);background:#071532}.community-user-text{display:grid;gap:3px;flex:1;min-width:0}.community-user-text b{color:#e9faff;overflow-wrap:anywhere}.community-user-text span{color:var(--muted);font-size:10px}.tiny-btn{padding:7px 9px}.form-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.install.compact{width:auto;padding:10px 14px;margin:0;font-size:12px}.settings-box{margin:13px 0;border:1px solid rgba(28,227,255,.18);border-radius:12px;padding:11px;color:var(--cyan);font-size:13px}.settings-box summary{cursor:pointer;font-weight:800}.settings-box .community-form{margin-top:12px}.posts-list{display:grid;gap:12px;margin-top:14px}.post-card{padding:13px;border:1px solid rgba(28,227,255,.22);border-radius:14px;background:rgba(2,10,30,.7);min-width:0}.post-author{display:flex;align-items:center;gap:9px}.post-author-meta{display:grid;gap:3px;min-width:0;flex:1}.post-author-meta b{font-size:12px;color:#e9faff;overflow-wrap:anywhere}.profile-badge{display:inline-block;margin-left:5px;padding:2px 6px;border:1px solid rgba(28,227,255,.45);border-radius:99px;font-size:9px;line-height:1.4;color:var(--cyan);vertical-align:middle}.announcement-list{display:grid;gap:10px;margin:12px 0}.announcement-card{padding:14px;border:1px solid rgba(28,227,255,.65);border-radius:13px;background:linear-gradient(145deg,rgba(28,227,255,.12),rgba(15,140,255,.12));box-shadow:0 0 14px rgba(28,227,255,.08)}.announcement-card h3{text-align:center;font-size:19px;font-weight:900;color:#1ce3ff;margin:0 0 9px}.announcement-card p{white-space:pre-wrap;overflow-wrap:anywhere;font-weight:800;color:#fff;font-size:13px;line-height:1.6;margin:0}.admin-box{margin:14px 0;padding:13px;border:1px solid rgba(255,215,0,.4);border-radius:13px;background:rgba(255,215,0,.04)}.admin-box h3{margin:0 0 10px;color:#ffe58a}.admin-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-stat{padding:10px;border:1px solid rgba(255,215,0,.18);border-radius:10px;text-align:center}.admin-stat b{display:block;font-size:20px;color:#ffe58a}.admin-stat span{font-size:10px;color:var(--muted)}.admin-users{display:grid;gap:7px;margin-top:10px}.admin-user{display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,0,0,.18);border-radius:9px;font-size:11px}.admin-user img{width:30px;height:30px;object-fit:cover;border-radius:50%}.system-setup{margin-top:12px;padding:11px;border:1px dashed rgba(28,227,255,.25);border-radius:12px}.system-setup summary{font-size:12px;color:var(--cyan);font-weight:800;cursor:pointer}.appearance-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.appearance-row input[type=color]{height:42px;padding:4px}.post-date{font-size:10px;color:var(--muted)}.post-text{white-space:pre-wrap;overflow-wrap:anywhere;color:#d6e8ff;font-size:13px;line-height:1.6;margin:12px 0}.post-actions{display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid rgba(28,227,255,.12);padding-top:10px}.post-actions button,.reply-form button,.edit-form button{border:1px solid rgba(28,227,255,.2);border-radius:9px;padding:7px 10px;background:rgba(28,227,255,.06);color:#cdeeff;font:inherit;font-size:11px;cursor:pointer}.post-actions button.liked{color:#ff8ac0;border-color:rgba(255,138,192,.4)}.post-actions button.danger{color:#ffaaaa}.reply-list{display:grid;gap:8px;margin-top:12px;padding-left:12px;border-left:2px solid rgba(28,227,255,.18)}.reply-item{padding:9px;border-radius:10px;background:rgba(15,140,255,.06)}.reply-item b{font-size:11px;color:var(--cyan)}.reply-item p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;color:#c5d7f5;margin:5px 0}.reply-form,.edit-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin-top:10px}.reply-form input,.edit-form textarea{min-width:0;width:100%;padding:9px;border:1px solid rgba(28,227,255,.2);border-radius:9px;background:#020b20;color:#fff;font:inherit;font-size:12px}.edit-form{grid-template-columns:1fr}.edit-form textarea{resize:vertical}.community-foot{color:var(--muted);font-size:10px;line-height:1.5;margin:13px 0 0}
+
+/* Download guidance dialog */
+.download-overlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,5,18,.86);backdrop-filter:blur(9px)}.download-overlay.open{display:flex}.download-dialog{width:min(100%,440px);padding:22px;border:1px solid rgba(28,227,255,.65);border-radius:22px;background:linear-gradient(145deg,#071532,#020a1e);box-shadow:0 0 35px rgba(28,227,255,.22)}.download-dialog h2{margin:0 0 9px;color:var(--cyan);font-size:22px}.download-dialog p,.download-dialog li{color:#c5d7f5;font-size:14px;line-height:1.6}.download-dialog ol{padding-left:22px}.download-spinner{width:44px;height:44px;margin:14px auto;border:4px solid rgba(28,227,255,.18);border-top-color:var(--cyan);border-radius:50%;animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.dialog-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}.dialog-actions button{font:inherit;cursor:pointer}.download-note{font-size:11px!important;color:#8aa0c8!important}.install-next{display:none;margin-top:14px;padding:12px;border-radius:12px;border:1px solid rgba(28,227,255,.28);background:rgba(28,227,255,.06)}
+.post-pagination{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px 0 4px;color:#cdeeff;font-size:11px}.post-pagination button{border:1px solid rgba(28,227,255,.3);border-radius:9px;padding:8px 12px;background:rgba(28,227,255,.07);color:#dff8ff;font:inherit;cursor:pointer}.post-pagination button:disabled{opacity:.4;cursor:not-allowed}.post-pagination[hidden]{display:none!important}.post-pagination span{text-align:center}
+
+/* Community page readability and separate post-detail view */
+.community-page{width:min(100%,760px);margin:0 auto}
+.community{margin-top:0;width:100%;background:linear-gradient(150deg,rgba(15,140,255,.18),rgba(0,0,0,.17))}
+.post-text{font-size:16px;line-height:1.75}
+.post-author-meta b{font-size:14px}
+.post-date{font-size:12px}
+.reply-item{font-size:14px}
+.reply-item b{font-size:13px}
+.reply-item p{font-size:14px;line-height:1.65}
+.post-actions button,.reply-form button,.edit-form button{font-size:13px;padding:9px 12px}
+.read-more-link,.community-back{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(28,227,255,.45);border-radius:10px;padding:9px 13px;margin-top:9px;background:rgba(28,227,255,.08);color:var(--cyan);font-size:13px;font-weight:800;text-decoration:none;cursor:pointer}
+.community-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.community-top a{color:var(--cyan);font-weight:800;text-decoration:none}
+.community-entry{margin-top:20px;padding:18px;border:1px solid rgba(28,227,255,.35);border-radius:18px;background:rgba(7,21,50,.92);text-align:center}
+.community-entry a{display:inline-block;margin-top:10px;padding:12px 18px;border-radius:12px;background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;text-decoration:none;font-weight:900}
+.post-pagination[hidden]{display:none}
+</style>
+</head>
+<body>
+<main class="community-page">
+<section class="community" aria-labelledby="communityTitle">
+ <div class="community-top"><a href="/">← Back to install page</a><span class="post-date">Folder Locker • Community</span></div>
+ <div class="community-head"><div><div class="eyebrow">Folder Locker Community</div><h2 id="communityTitle">💬 Leave a  Comment</h2><p>Share thoughts, ask questions, reply, and like posts.</p></div><span class="community-live">● Community</span></div>
+ <div id="announcementList" class="announcement-list" aria-live="polite"></div>
+ <div id="communityNotice" class="community-notice" role="status" aria-live="polite">Connecting to the community…</div>
+ <div id="authPanel" class="community-panel">
+  <div class="community-tabs"><button type="button" class="community-tab active" id="showLogin">Log in</button><button type="button" class="community-tab" id="showRegister">Create account</button></div>
+  <form id="loginForm" class="community-form" autocomplete="off">
+   <label>Username<input id="loginUsername" autocomplete="username" minlength="3" maxlength="24" required placeholder="Your username"></label>
+   <label>Password<input id="loginPassword" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" minlength="4" required placeholder="At least 4 characters"></label>
+   <button class="install" type="submit">Log in</button>
+  </form>
+  <form id="registerForm" class="community-form" autocomplete="off" hidden>
+   <label>Username<input id="registerUsername" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
+   <label>Password<input id="registerPassword" name="communitySecret" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" inputmode="text" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
+   <label>Profile picture <span class="muted-small">(optional)</span><input id="registerAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+   <button class="install" type="submit">Create account</button>
+  </form>
+  <details class="system-setup"><summary>One-time System account setup</summary>
+   <p class="muted-small">Create the built-in FolderLockerAdmin account once. Generate a strong password in Termux, and enter the separate SYSTEM_SETUP_SECRET configured in Vercel. After setup, use the normal Log in tab with username FolderLockerAdmin and that password. Never share either secret.</p>
+   <form id="systemSetupForm" class="community-form" autocomplete="off">
+    <label>One-time setup secret<input id="systemSetupSecret" type="password" autocomplete="off" required></label>
+    <label>Strong System password<input id="systemSetupPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="At least 16 characters"></label>
+    <button class="secondary" type="submit">Create System administrator</button>
+   </form>
+  </details>
+ </div>
+ <div id="communityApp" hidden>
+  <div class="community-user"><img id="currentAvatar" alt="Your profile picture" src="/icon.png"><div class="community-user-text"><b id="currentUsername"></b><span>Signed in</span></div><button type="button" class="tiny-btn" id="logoutButton">Log out</button></div>
+  <form id="postForm" class="community-form">
+   <label for="postText">Create a post</label><textarea id="postText" maxlength="1200" rows="3" required placeholder="Write a text-only post…"></textarea>
+   <div class="form-foot"><span class="muted-small">Text only • max 1,200 characters</span><button class="install compact" type="submit">Publish post</button></div>
+  </form>
+  <details class="settings-box"><summary>⚙️ Account settings</summary>
+   <form id="settingsForm" class="community-form">
+    <label>Change username<input id="settingsUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="New username"></label>
+    <label>Change password<input id="settingsPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="New password (optional, at least 4 characters)"></label>
+    <label>Change profile picture <span class="muted-small">(max 3 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+    <div class="appearance-row"><label>Display name color<input id="settingsNameColor" type="color" value="#e9faff"></label><label>Profile badge <span class="muted-small">(admin only)</span><input id="settingsBadge" maxlength="18" placeholder="Admin / Owner"></label></div>
+    <button class="secondary" type="submit">Save account settings</button>
+   </form>
+  </details>
+  <section id="adminDashboard" class="admin-box" hidden>
+   <h3>⚙ System Administration</h3>
+   <div id="adminStats" class="admin-stats"></div>
+   <details class="settings-box" open><summary>Publish official announcement</summary>
+    <form id="announcementForm" class="community-form"><label>Announcement title<input id="announcementTitle" maxlength="100" required placeholder="Important community notice"></label><label>Announcement body<textarea id="announcementBody" maxlength="2000" rows="4" required placeholder="Write the official message…"></textarea></label><button class="install compact" type="submit">Publish announcement</button></form>
+   </details>
+   <h4 style="color:var(--cyan);margin:12px 0 5px">Newest users</h4><div id="adminUsers" class="admin-users"></div>
+  </section>
+  <div id="postsList" class="posts-list" aria-live="polite"></div>
+  <div id="postPagination" class="post-pagination" hidden><button type="button" id="previousPosts">← Previous</button><span id="pageLabel">Page 1</span><button type="button" id="nextPosts">Next →</button></div>
+ </div>
+ <p class="community-foot" style="color: red; font-weight: bold;">⚠️Be respectful. Do not use bad words</p>
+</section>
+</main>
+<script>
+(() => {
+ const API='/api/community';
+ function fmt(n){return Number(n||0).toLocaleString()}
+ const $=id=>document.getElementById(id);
+ const tokenKey='folderLockerCommunityToken';
+ let token=localStorage.getItem(tokenKey)||'';
+ let currentUser=null;
+ let authMode='login';
+ let currentPage=1;
+ let selectedPostId='';
+ let pageHasMore=false;
+ let totalPosts=0;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const when=t=>{try{return new Date(t).toLocaleString()}catch(e){return ''}};
+ function notice(message,type=''){const el=$('communityNotice');el.textContent=message;el.className='community-notice'+(type?' '+type:'')}
+ async function api(action,data={}) {
+   const url=action==='load'?API+'?page='+encodeURIComponent(data.page||currentPage):API;
+   const r=await fetch(url,{method:action==='load'?'GET':'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(action==='load'?{}:{body:JSON.stringify({action,...data})}),cache:'no-store'});
+   let d={};try{d=await r.json()}catch(e){}
+   if(!r.ok)throw new Error(d.error||'The community service could not complete that request.');
+   return d;
+ }
+ function validateAvatarFile(file){
+   if(!file)return;
+   const allowed=['image/jpeg','image/png','image/webp','image/gif'];
+   if(!allowed.includes(file.type))throw new Error('Choose a JPG, PNG, WEBP, or GIF image.');
+   if(file.size<1||file.size>3*1024*1024)throw new Error('Profile pictures must be no larger than 3 MB.');
+ }
+ async function uploadAvatar(file){
+   if(!file)return null;
+   validateAvatarFile(file);
+   const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Could not read the profile picture.'));reader.readAsDataURL(file)});
+   const result=await api('uploadAvatar',{mimeType:file.type,dataUrl});
+   return result.user;
+ }
+ function showAuth(login=true){
+   authMode=login?'login':'register';
+   $('authPanel').hidden=false;$('communityApp').hidden=true;
+   // Avoid toggling a focused form's visibility when an asynchronous response arrives.
+   if($('loginForm').hidden!==!login)$('loginForm').hidden=!login;
+   if($('registerForm').hidden!==login)$('registerForm').hidden=login;
+   $('showLogin').classList.toggle('active',login);$('showRegister').classList.toggle('active',!login);
+ }
+ function isEditingAuthField(){
+   const id=document.activeElement?.id||'';
+   return ['loginUsername','loginPassword','registerUsername','registerPassword','registerAvatar','systemSetupSecret','systemSetupPassword'].includes(id);
+ }
+ function showApp(user){
+   currentUser=user;$('authPanel').hidden=true;$('communityApp').hidden=false;
+   $('currentUsername').textContent=user.username;$('currentUsername').style.color=user.displayNameColor||'#e9faff';$('currentAvatar').src=user.avatar||'/icon.png';
+   $('settingsUsername').value=user.username;$('settingsPassword').value='';$('settingsAvatar').value='';$('settingsNameColor').value=user.displayNameColor||'#e9faff';$('settingsBadge').value=user.badge||'';$('settingsBadge').disabled=user.role!=='admin';$('adminDashboard').hidden=user.role!=='admin';
+ }
+ async function load(){
+   try{
+     const d=await api('load',{page:currentPage});
+     if(!d.posts?.length&&currentPage>1&&Number(d.total||0)>0){currentPage--;return load()}
+     pageHasMore=!!d.hasMore;totalPosts=Number(d.total||0);currentPage=Number(d.page||currentPage);
+     renderAnnouncements(d.announcements||[]);
+     if(d.user){showApp(d.user);renderPosts(d.posts||[]);notice('You are signed in. Posts and replies are shared with other visitors.','success');await loadAdminDashboard()}
+     else {token='';localStorage.removeItem(tokenKey);currentUser=null;if(!isEditingAuthField())showAuth(authMode==='login');renderPosts(d.posts||[]);notice('Create an account or log in to publish, like, and reply.')}
+     renderPagination();
+   }catch(e){if(!isEditingAuthField())showAuth(authMode==='login');notice(e.message+' Please try again when the site is online.','error')}
+ }
+ function renderPagination(){
+   const nav=$('postPagination');
+   nav.hidden=!!selectedPostId||!(currentPage>1||pageHasMore);
+   $('previousPosts').hidden=currentPage<=1;
+   $('nextPosts').hidden=!pageHasMore;
+   $('previousPosts').disabled=currentPage<=1;
+   $('nextPosts').disabled=!pageHasMore;
+   const start=totalPosts?((currentPage-1)*20+1):0;
+   const end=Math.min(currentPage*20,totalPosts);
+   $('pageLabel').textContent=totalPosts?`Page ${currentPage} • posts ${start}–${end} of ${totalPosts}`:`Page ${currentPage}`;
+ }
+ function renderAnnouncements(items=[]){
+   const host=$('announcementList');
+   host.innerHTML=items.map(a=>`<article class="announcement-card"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><div class="post-date" style="margin-top:8px;text-align:right">Official • ${esc(a.authorName||'System')} • ${esc(when(a.createdAt))}${currentUser?.role==='admin'?` <button type="button" class="tiny-btn" data-delete-announcement="${esc(a.id)}">Delete</button>`:''}</div></article>`).join('');
+ }
+ async function loadAdminDashboard(){
+   if(currentUser?.role!=='admin')return;
+   try{const [d,siteStats]=await Promise.all([api('adminDashboard'),fetch('/api/stats?admin=1',{headers:{Authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||'Could not load website statistics.');return x})]);const allStats={visits:siteStats.visits,completedDownloads:siteStats.completedDownloads,...(d.stats||{})};$('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<div class="admin-stat"><b>${fmt(v)}</b><span>${esc(k)}</span></div>`).join('');$('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<div class="admin-user"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · ${esc(when(u.createdAt))}</span></span></div>`).join('')||'<p class="muted-small">No users yet.</p>'}catch(e){notice(e.message,'error')}
+ }
+ function renderPosts(posts){
+   const host=$('postsList');
+   if(selectedPostId)posts=posts.filter(p=>p.id===selectedPostId);
+   if(!posts.length){host.innerHTML='<div class="community-notice">No posts yet. Be the first to start a conversation.</div>';return}
+   host.innerHTML=posts.map(p=>{
+     const owner=currentUser&&p.authorId===currentUser.id;
+     const liked=currentUser&&(p.likes||[]).includes(currentUser.id);
+     const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="reply-item"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</b><p>${esc(c.text)}</p><span class="post-date">${esc(when(c.createdAt))}</span>
+       ${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item" style="margin:8px 0 0 10px"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'var(--cyan)'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</b><p>${esc(r.text)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div>`).join('')}
+       ${(currentUser&&selectedPostId===p.id)?`<form class="reply-form" data-reply="${esc(c.id)}" data-post="${esc(p.id)}"><input name="text" maxlength="500" required placeholder="Reply to ${esc(c.authorName)}…"><button type="submit">Reply</button></form>`:''}
+     </div>`).join('');
+     return `<article class="post-card" data-post-card="${esc(p.id)}">
+       <div class="post-author"><img class="post-avatar" src="${esc(p.authorAvatar||'/icon.png')}" alt=""><div class="post-author-meta"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(p.authorColor||'')?p.authorColor:'#e9faff'}">${esc(p.authorName)}${p.badge?` <span class="profile-badge">${esc(p.badge)}</span>`:''}</b><span class="post-date">${esc(when(p.createdAt))}${p.updatedAt?' • edited':''}</span></div></div>
+       <p class="post-text" data-post-text>${esc(p.text)}</p>
+       <div class="post-actions"><button type="button" data-action="like" data-id="${esc(p.id)}" class="${liked?'liked':''}">♥ ${Number((p.likes||[]).length)} Like${(p.likes||[]).length===1?'':'s'}</button>
+       ${owner?`<button type="button" data-action="edit" data-id="${esc(p.id)}">Edit post</button><button type="button" class="danger" data-action="delete" data-id="${esc(p.id)}">Delete post</button>`:''}${currentUser?.role==='admin'&&!owner?`<button type="button" class="danger" data-action="admin-delete" data-id="${esc(p.id)}">Admin delete</button>`:''}
+       <span class="post-date">${(p.comments||[]).length} comment${(p.comments||[]).length===1?'':'s'}</span>
+       ${selectedPostId===p.id?`<button type="button" data-action="back-posts">← Back to posts</button>`:`<button type="button" class="read-more-link" data-action="read-more" data-id="${esc(p.id)}">Read more</button>`}
+       </div>
+       ${owner?`<form class="edit-form" data-edit="${esc(p.id)}" hidden><textarea name="text" maxlength="1200" rows="3" required>${esc(p.text)}</textarea><div class="form-foot"><button type="submit">Save changes</button><button type="button" data-action="cancel-edit">Cancel</button></div></form>`:''}
+       <div class="reply-list">${comments}</div>
+       ${(currentUser&&selectedPostId===p.id)?`<form class="reply-form" data-comment="${esc(p.id)}"><input name="text" maxlength="700" required placeholder="Write a text comment…"><button type="submit">Comment</button></form>`:(selectedPostId===p.id?'<p class="muted-small">Log in to comment or reply.</p>':'')}
+     </article>`;
+   }).join('');
+ }
+ $('showLogin').addEventListener('click',()=>showAuth(true));
+ $('showRegister').addEventListener('click',()=>showAuth(false));
+ $('loginForm').addEventListener('submit',async e=>{
+   e.preventDefault();
+   try{const d=await api('login',{username:$('loginUsername').value.trim(),password:$('loginPassword').value});token=d.token;localStorage.setItem(tokenKey,token);$('loginPassword').value='';notice('Welcome back!','success');await load()}
+   catch(err){notice(err.message,'error')}
+ });
+ $('registerForm').addEventListener('submit',async e=>{
+   e.preventDefault();
+   try{
+     const avatarFile=$('registerAvatar').files[0];
+     validateAvatarFile(avatarFile);
+     const d=await api('register',{username:$('registerUsername').value.trim(),password:$('registerPassword').value});
+     token=d.token;localStorage.setItem(tokenKey,token);$('registerPassword').value='';$('registerAvatar').value='';currentPage=1;
+     let message='Account created successfully.',type='success';
+     if(avatarFile){try{await uploadAvatar(avatarFile)}catch(err){message='Account created, but the profile picture was not saved: '+err.message;type='error'}}
+     await load();notice(message,type);
+   }catch(err){notice(err.message,'error')}
+ });
+ $('systemSetupForm').addEventListener('submit',async e=>{
+   e.preventDefault();const setupSecret=$('systemSetupSecret').value,password=$('systemSetupPassword').value;
+   if(password.length<16||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password)){notice('Use at least 16 characters with uppercase, lowercase, a number, and a symbol.','error');return}
+   try{const d=await api('bootstrapSystem',{setupSecret,password});token=d.token;localStorage.setItem(tokenKey,token);$('systemSetupSecret').value='';$('systemSetupPassword').value='';notice('System administrator created.','success');await load()}catch(err){notice(err.message,'error')}
+ });
+ $('announcementForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('createAnnouncement',{title:$('announcementTitle').value.trim(),text:$('announcementBody').value.trim()});$('announcementTitle').value='';$('announcementBody').value='';notice('Official announcement published.','success');await load()}catch(err){notice(err.message,'error')}});
+ $('announcementList').addEventListener('click',async e=>{const b=e.target.closest('[data-delete-announcement]');if(!b||currentUser?.role!=='admin')return;if(!confirm('Delete this official announcement?'))return;try{await api('deleteAnnouncement',{announcementId:b.dataset.deleteAnnouncement});await load()}catch(err){notice(err.message,'error')}});
+ $('logoutButton').addEventListener('click',async()=>{
+   if(!confirm('Log out of the Folder Locker community?'))return;
+   try{await api('logout')}catch(e){}
+   token='';localStorage.removeItem(tokenKey);currentUser=null;showAuth(true);notice('You have logged out.');await load();
+ });
+ $('postForm').addEventListener('submit',async e=>{
+   e.preventDefault();const text=$('postText').value.trim();if(!text)return;
+   try{await api('createPost',{text});$('postText').value='';currentPage=1;notice('Your post has been published.','success');await load()}
+   catch(err){notice(err.message,'error')}
+ });
+ $('settingsForm').addEventListener('submit',async e=>{
+   e.preventDefault();
+   const username=$('settingsUsername').value.trim(),password=$('settingsPassword').value,avatarFile=$('settingsAvatar').files[0];
+   if(!username&&!password&&!avatarFile){notice('Enter a new username, password, or profile picture first.');return}
+   try{validateAvatarFile(avatarFile)}catch(err){notice(err.message,'error');return}
+   if(!confirm('Save these account changes?'))return;
+   try{
+     let d={user:currentUser};
+     if(username||password)d=await api('profile',{username,password});
+     d=await api('updateAppearance',{displayNameColor:$('settingsNameColor').value,...(currentUser.role==='admin'?{badge:$('settingsBadge').value}:{})});
+     $('settingsPassword').value='';
+     if(avatarFile){
+       try{d={user:await uploadAvatar(avatarFile)}}
+       catch(err){$('settingsAvatar').value='';showApp(d.user);await load();notice('Account changes were saved, but the profile picture failed: '+err.message,'error');return}
+     }
+     $('settingsAvatar').value='';showApp(d.user);notice('Account settings saved.','success');await load();
+   }catch(err){notice(err.message,'error')}
+ });
+ $('postsList').addEventListener('click',async e=>{
+   const b=e.target.closest('button[data-action]');if(!b)return;
+   const action=b.dataset.action,id=b.dataset.id;
+   if(action==='read-more'){selectedPostId=id;await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
+   if(action==='back-posts'){selectedPostId='';await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
+   if(action==='cancel-edit'){const f=b.closest('.edit-form');f.hidden=true;return}
+   if(action==='edit'){const f=$('postsList').querySelector(`form[data-edit="${CSS.escape(id)}"]`);if(f)f.hidden=false;return}
+   if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!confirm('Administrator: permanently delete this post and its comments?'))return;try{await api('adminDeletePost',{postId:id});notice('Post removed by administrator.','success');await load()}catch(err){notice(err.message,'error')}return}
+   if(action==='delete'){
+     if(!confirm('Delete this post and all its comments? This cannot be undone.'))return;
+     try{await api('deletePost',{postId:id});notice('Post deleted.','success');await load()}catch(err){notice(err.message,'error')}return;
+   }
+   if(action==='like'){try{await api('likePost',{postId:id});await load()}catch(err){notice(err.message,'error')}}
+ });
+ $('postsList').addEventListener('submit',async e=>{
+   const f=e.target;
+   try{
+     if(f.matches('[data-edit]')){
+       e.preventDefault();if(!confirm('Save your edits to this post?'))return;
+       await api('editPost',{postId:f.dataset.edit,text:f.elements.text.value});notice('Post updated.','success');await load();
+     }else if(f.matches('[data-comment]')){
+       e.preventDefault();await api('comment',{postId:f.dataset.comment,text:f.elements.text.value});notice('Comment added.','success');await load();
+     }else if(f.matches('[data-reply]')){
+       e.preventDefault();await api('reply',{postId:f.dataset.post,commentId:f.dataset.reply,text:f.elements.text.value});notice('Reply added.','success');await load();
+     }
+   }catch(err){notice(err.message,'error')}
+ });
+ $('previousPosts').addEventListener('click',async()=>{if(selectedPostId){selectedPostId='';await load();return}if(currentPage<=1)return;currentPage--;await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'})});
+ $('nextPosts').addEventListener('click',async()=>{if(selectedPostId||!pageHasMore)return;currentPage++;await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'})});
+ load();
+})();
+
+</script>
+</body>
+</html>

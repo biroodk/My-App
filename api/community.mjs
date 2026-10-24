@@ -6,7 +6,7 @@ const DB = createKV('folder-locker-community-v2');
 const AVATARS = createAvatarStore();
 const PAGE_SIZE = 20;
 const AVATAR_LIMIT = 3 * 1024 * 1024;
-const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_MS = 2 * 60 * 60 * 1000; // Require login again after two hours.
 const headers = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
@@ -140,6 +140,46 @@ async function communityHandler(request) {
     const action = clean(body.action, 40);
     const username = clean(body.username, 24);
     let user = await authUser(request);
+
+    if (action === 'provisionSystemAdmin') {
+      // Preferred setup path: the strong password stays in Vercel environment settings.
+      // This public one-time action never accepts or returns the administrator password.
+      const configuredPassword = process.env.SYSTEM_ADMIN_PASSWORD || '';
+      const strongPassword = typeof configuredPassword === 'string'
+        && configuredPassword.length >= 20 && configuredPassword.length <= 128
+        && /[A-Z]/.test(configuredPassword) && /[a-z]/.test(configuredPassword)
+        && /[0-9]/.test(configuredPassword) && /[^A-Za-z0-9]/.test(configuredPassword);
+      if (!strongPassword) return reply({ error: 'System account is not configured. Set SYSTEM_ADMIN_PASSWORD in Vercel to a strong password of at least 20 characters, then redeploy.' }, 503);
+      const adminName = 'FolderLockerAdmin';
+      const reservedId = await DB.get(`usernames/${adminName.toLowerCase()}`, { consistency: 'strong' });
+      if (reservedId) {
+        const existing = await getUser(reservedId);
+        if (existing) return reply({ error: 'The system account already exists. Sign in through the normal Log in form as FolderLockerAdmin.' }, 409);
+        // Recover a stale username reservation left by an interrupted first-time setup.
+        await DB.delete(`usernames/${adminName.toLowerCase()}`);
+      }
+      let setup = await DB.set('meta/system-admin-created', new Date().toISOString(), { onlyIfNew: true });
+      if (!setup.modified) {
+        // If a prior failed attempt left only the marker, clear that orphan and retry once.
+        if (await findUserByName(adminName)) return reply({ error: 'System administrator setup has already been completed. Use the normal Log in form.' }, 409);
+        await DB.delete('meta/system-admin-created');
+        setup = await DB.set('meta/system-admin-created', new Date().toISOString(), { onlyIfNew: true });
+        if (!setup.modified) return reply({ error: 'System administrator setup is busy. Wait briefly and retry.' }, 409);
+      }
+      const admin = userRecord(adminName, passwordHash(configuredPassword), 'admin');
+      if (!(await reserveUsername(adminName, admin.id))) {
+        await DB.delete('meta/system-admin-created');
+        return reply({ error: 'FolderLockerAdmin is already reserved. Check the existing account before retrying.' }, 409);
+      }
+      try {
+        await putJSON(`users/${admin.id}`, admin, { onlyIfNew: true });
+      } catch (error) {
+        await DB.delete(`usernames/${adminName.toLowerCase()}`);
+        await DB.delete('meta/system-admin-created');
+        throw error;
+      }
+      return reply({ ok: true, username: adminName, message: 'System account created. Sign in through the normal Log in form.' }, 201);
+    }
 
     if (action === 'bootstrapSystem') {
       const setupSecret = process.env.SYSTEM_SETUP_SECRET || '';

@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
                 String host = uri.getHost();
                 if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null) return false;
                 String normalized = host.toLowerCase(Locale.ROOT);
-                if (!Arrays.asList("chat.whatsapp.com","wa.me","my-first-app-v1.netlify.app").contains(normalized)) return false;
+                if (!Arrays.asList("chat.whatsapp.com","wa.me","folder-locker-my-first-app.vercel.app").contains(normalized)) return false;
                 runOnUiThread(() -> {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, uri);

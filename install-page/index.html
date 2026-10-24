@@ -57,59 +57,10 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  </div>
 </div>
 </div>
-<section class="community" aria-labelledby="communityTitle">
- <div class="community-head"><div><div class="eyebrow">Folder Locker Community</div><h2 id="communityTitle">💬 Leave a  Comment</h2><p>Share thoughts, ask questions, reply, and like posts.</p></div><span class="community-live">● Community</span></div>
- <div id="announcementList" class="announcement-list" aria-live="polite"></div>
- <div id="communityNotice" class="community-notice" role="status" aria-live="polite">Connecting to the community…</div>
- <div id="authPanel" class="community-panel">
-  <div class="community-tabs"><button type="button" class="community-tab active" id="showLogin">Log in</button><button type="button" class="community-tab" id="showRegister">Create account</button></div>
-  <form id="loginForm" class="community-form" autocomplete="off">
-   <label>Username<input id="loginUsername" autocomplete="username" minlength="3" maxlength="24" required placeholder="Your username"></label>
-   <label>Password<input id="loginPassword" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" minlength="4" required placeholder="At least 4 characters"></label>
-   <button class="install" type="submit">Log in</button>
-  </form>
-  <form id="registerForm" class="community-form" autocomplete="off" hidden>
-   <label>Username<input id="registerUsername" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
-   <label>Password<input id="registerPassword" name="communitySecret" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" inputmode="text" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
-   <label>Profile picture <span class="muted-small">(optional)</span><input id="registerAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
-   <button class="install" type="submit">Create account</button>
-  </form>
-  <details class="system-setup"><summary>First-time System administrator setup</summary>
-   <p class="muted-small">Only works before an administrator exists and requires the one-time setup secret configured by the site owner in Vercel. Never share that secret.</p>
-   <form id="systemSetupForm" class="community-form" autocomplete="off">
-    <label>One-time setup secret<input id="systemSetupSecret" type="password" autocomplete="off" required></label>
-    <label>Strong System password<input id="systemSetupPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="At least 16 characters"></label>
-    <button class="secondary" type="submit">Create System administrator</button>
-   </form>
-  </details>
- </div>
- <div id="communityApp" hidden>
-  <div class="community-user"><img id="currentAvatar" alt="Your profile picture" src="/icon.png"><div class="community-user-text"><b id="currentUsername"></b><span>Signed in</span></div><button type="button" class="tiny-btn" id="logoutButton">Log out</button></div>
-  <form id="postForm" class="community-form">
-   <label for="postText">Create a post</label><textarea id="postText" maxlength="1200" rows="3" required placeholder="Write a text-only post…"></textarea>
-   <div class="form-foot"><span class="muted-small">Text only • max 1,200 characters</span><button class="install compact" type="submit">Publish post</button></div>
-  </form>
-  <details class="settings-box"><summary>⚙️ Account settings</summary>
-   <form id="settingsForm" class="community-form">
-    <label>Change username<input id="settingsUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="New username"></label>
-    <label>Change password<input id="settingsPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="New password (optional, at least 4 characters)"></label>
-    <label>Change profile picture <span class="muted-small">(max 3 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
-    <div class="appearance-row"><label>Display name color<input id="settingsNameColor" type="color" value="#e9faff"></label><label>Profile badge <span class="muted-small">(admin only)</span><input id="settingsBadge" maxlength="18" placeholder="Admin / Owner"></label></div>
-    <button class="secondary" type="submit">Save account settings</button>
-   </form>
-  </details>
-  <section id="adminDashboard" class="admin-box" hidden>
-   <h3>⚙ System Administration</h3>
-   <div id="adminStats" class="admin-stats"></div>
-   <details class="settings-box" open><summary>Publish official announcement</summary>
-    <form id="announcementForm" class="community-form"><label>Announcement title<input id="announcementTitle" maxlength="100" required placeholder="Important community notice"></label><label>Announcement body<textarea id="announcementBody" maxlength="2000" rows="4" required placeholder="Write the official message…"></textarea></label><button class="install compact" type="submit">Publish announcement</button></form>
-   </details>
-   <h4 style="color:var(--cyan);margin:12px 0 5px">Newest users</h4><div id="adminUsers" class="admin-users"></div>
-  </section>
-  <div id="postsList" class="posts-list" aria-live="polite"></div>
-  <div id="postPagination" class="post-pagination" hidden><button type="button" id="previousPosts">← Previous</button><span id="pageLabel">Page 1</span><button type="button" id="nextPosts">Next →</button></div>
- </div>
- <p class="community-foot" style="color: red; font-weight: bold;">⚠️Be respectful. Do not use bad words</p>
+<section class="community-entry" aria-label="Folder Locker Community">
+ <div class="eyebrow">Community space</div><h2 style="color:var(--cyan);margin:8px 0">💬 Folder Locker Community</h2>
+ <p style="color:#b9cbed;line-height:1.6">Sign in to share posts, like, comment, reply, and manage your community account.</p>
+ <a href="/community.html">Open Folder Locker Community</a>
 </section>
 </main>
 <script>
