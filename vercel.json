@@ -5,6 +5,9 @@
   "functions": {
     "api/**/*.mjs": {
       "maxDuration": 30
+    },
+    "api/download.mjs": {
+      "maxDuration": 300
     }
   }
 }

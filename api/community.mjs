@@ -199,6 +199,7 @@ async function communityHandler(request) {
     if (action === 'register') {
       if (!validateUsername(username)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
       if (!validPassword(body.password)) return reply({ error: 'Password must be 4–128 characters.' }, 400);
+      if (body.password !== body.confirmPassword) return reply({ error: 'Passwords do not match.' }, 400);
       const newUser = userRecord(username, passwordHash(body.password));
       if (!(await reserveUsername(username, newUser.id))) return reply({ error: 'That username is already taken.' }, 409);
       try { await putJSON(`users/${newUser.id}`, newUser, { onlyIfNew: true }); }
@@ -248,7 +249,9 @@ async function communityHandler(request) {
         user.username = nextName; user.usernameLower = nextName.toLowerCase(); changedName = true;
       }
       if (body.password) {
+        if (!validPassword(body.currentPassword, 4) || !passwordMatches(body.currentPassword, user)) return reply({ error: 'Your current password is incorrect.' }, 401);
         if (!validPassword(body.password, 4)) return reply({ error: 'New password must be 4–128 characters.' }, 400);
+        if (body.password !== body.confirmPassword) return reply({ error: 'The new passwords do not match.' }, 400);
         const pass = passwordHash(body.password); user.passwordSalt = pass.salt; user.passwordHash = pass.hash;
       }
       try { await putJSON(`users/${user.id}`, user); }

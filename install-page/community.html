@@ -43,6 +43,16 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
 .community-entry{margin-top:20px;padding:18px;border:1px solid rgba(28,227,255,.35);border-radius:18px;background:rgba(7,21,50,.92);text-align:center}
 .community-entry a{display:inline-block;margin-top:10px;padding:12px 18px;border-radius:12px;background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;text-decoration:none;font-weight:900}
 .post-pagination[hidden]{display:none}
+
+/* Learn programming WhatsApp shortcut: floating, draggable, and outside document flow. */
+.learn-wa-dock{position:fixed;z-index:9000;display:flex;align-items:center;gap:5px;max-width:calc(100vw - 20px);padding:5px;border:1px solid rgba(28,227,255,.65);border-radius:15px;background:rgba(2,10,30,.96);box-shadow:0 0 18px rgba(28,227,255,.24);backdrop-filter:blur(10px);transition:left .24s ease,top .24s ease,right .24s ease,bottom .24s ease;touch-action:none}
+.learn-wa-dock a{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:8px 10px;border-radius:10px;background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;font-size:12px;font-weight:900;text-decoration:none;white-space:nowrap}
+.learn-wa-dock button{min-height:34px;padding:7px 9px;border:1px solid rgba(28,227,255,.35);border-radius:9px;background:#071532;color:#dff8ff;font:700 11px system-ui;cursor:grab;touch-action:none}
+.learn-wa-dock button:active{cursor:grabbing}.learn-wa-dock.dragging{transition:none;opacity:.9;box-shadow:0 0 24px rgba(28,227,255,.48)}
+.community-confirm-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,5,18,.82);backdrop-filter:blur(8px)}
+.community-confirm-overlay.open{display:flex}.community-confirm-dialog{width:min(100%,390px);padding:22px;border:1px solid rgba(28,227,255,.7);border-radius:19px;background:linear-gradient(145deg,#071532,#020a1e);box-shadow:0 0 28px rgba(28,227,255,.2)}
+.community-confirm-dialog h3{margin:0 0 10px;color:var(--cyan);font-size:18px}.community-confirm-dialog p{margin:0;color:#d9eaff;line-height:1.55;font-size:14px;overflow-wrap:anywhere}.community-confirm-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:20px}.community-confirm-actions button{border:1px solid rgba(28,227,255,.3);border-radius:10px;padding:10px 14px;background:#071532;color:#e9faff;font:700 13px system-ui;cursor:pointer}.community-confirm-actions .confirm-yes{background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;border:0}.community-confirm-actions .confirm-danger{background:linear-gradient(100deg,#ff7b88,#ff3d61);color:#25000a;border:0}
+
 </style>
 </head>
 <body>
@@ -61,20 +71,17 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
   </form>
   <form id="registerForm" class="community-form" autocomplete="off" hidden>
    <label>Username<input id="registerUsername" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" minlength="3" maxlength="24" required pattern="[A-Za-z0-9_]{3,24}" placeholder="3–24 letters, numbers or _"></label>
-   <label>Password<input id="registerPassword" name="communitySecret" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" inputmode="text" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
+   <label>Password<input id="registerPassword" name="communitySecret" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" inputmode="text" minlength="4" maxlength="128" required placeholder="At least 4 characters"></label>
+   <label>Confirm password<input id="registerConfirmPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" minlength="4" maxlength="128" required placeholder="Enter the same password again"></label>
    <label>Profile picture <span class="muted-small">(optional)</span><input id="registerAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
    <button class="install" type="submit">Create account</button>
   </form>
-  <details class="system-setup"><summary>One-time System account setup</summary>
-   <p class="muted-small">Create the built-in FolderLockerAdmin account once. Generate a strong password in Termux, and enter the separate SYSTEM_SETUP_SECRET configured in Vercel. After setup, use the normal Log in tab with username FolderLockerAdmin and that password. Never share either secret.</p>
-   <form id="systemSetupForm" class="community-form" autocomplete="off">
-    <label>One-time setup secret<input id="systemSetupSecret" type="password" autocomplete="off" required></label>
-    <label>Strong System password<input id="systemSetupPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="16" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="At least 16 characters"></label>
-    <button class="secondary" type="submit">Create System administrator</button>
-   </form>
-  </details>
  </div>
  <div id="communityApp" hidden>
+  <div id="learnWaDock" class="learn-wa-dock" aria-label="Learn programing WhatsApp group">
+   <a href="https://chat.whatsapp.com/GqKi4FjlWJf5zzCc2692v5?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" target="_blank" rel="noopener noreferrer">🤝 Learn programing</a>
+   <button type="button" id="moveLearnWa" aria-label="Move WhatsApp shortcut" title="Drag to move; it snaps to an edge">↔ Move</button>
+  </div>
   <div class="community-user"><img id="currentAvatar" alt="Your profile picture" src="/icon.png"><div class="community-user-text"><b id="currentUsername"></b><span>Signed in</span></div><button type="button" class="tiny-btn" id="logoutButton">Log out</button></div>
   <form id="postForm" class="community-form">
    <label for="postText">Create a post</label><textarea id="postText" maxlength="1200" rows="3" required placeholder="Write a text-only post…"></textarea>
@@ -83,7 +90,9 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
   <details class="settings-box"><summary>⚙️ Account settings</summary>
    <form id="settingsForm" class="community-form">
     <label>Change username<input id="settingsUsername" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="New username"></label>
-    <label>Change password<input id="settingsPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="New password (optional, at least 4 characters)"></label>
+    <label>Current password<input id="settingsCurrentPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="current-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="Required only when changing password"></label>
+    <label>New password<input id="settingsPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="New password (optional)"></label>
+    <label>Confirm new password<input id="settingsConfirmPassword" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="4" maxlength="128" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" placeholder="Enter the new password again"></label>
     <label>Change profile picture <span class="muted-small">(max 3 MB)</span><input id="settingsAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
     <div class="appearance-row"><label>Display name color<input id="settingsNameColor" type="color" value="#e9faff"></label><label>Profile badge <span class="muted-small">(admin only)</span><input id="settingsBadge" maxlength="18" placeholder="Admin / Owner"></label></div>
     <button class="secondary" type="submit">Save account settings</button>
@@ -102,6 +111,10 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  </div>
  <p class="community-foot" style="color: red; font-weight: bold;">⚠️Be respectful. Do not use bad words</p>
 </section>
+
+<div class="community-confirm-overlay" id="communityConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="communityConfirmTitle" aria-describedby="communityConfirmMessage">
+ <div class="community-confirm-dialog"><h3 id="communityConfirmTitle">Confirm action</h3><p id="communityConfirmMessage"></p><div class="community-confirm-actions"><button type="button" id="communityConfirmCancel">Cancel</button><button type="button" class="confirm-yes" id="communityConfirmAccept">Continue</button></div></div>
+</div>
 </main>
 <script>
 (() => {
@@ -119,6 +132,29 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const when=t=>{try{return new Date(t).toLocaleString()}catch(e){return ''}};
  function notice(message,type=''){const el=$('communityNotice');el.textContent=message;el.className='community-notice'+(type?' '+type:'')}
+  function styledConfirm(message,options={}){
+    const overlay=$('communityConfirmOverlay'),yes=$('communityConfirmAccept'),no=$('communityConfirmCancel');
+    $('communityConfirmTitle').textContent=options.title||'Confirm action';$('communityConfirmMessage').textContent=message;
+    yes.textContent=options.confirmText||'Continue';yes.classList.toggle('confirm-danger',!!options.danger);overlay.classList.add('open');
+    return new Promise(resolve=>{let finished=false;const finish=value=>{if(finished)return;finished=true;overlay.classList.remove('open');yes.removeEventListener('click',accept);no.removeEventListener('click',cancel);overlay.removeEventListener('click',outside);document.removeEventListener('keydown',key);resolve(value)};const accept=()=>finish(true),cancel=()=>finish(false),outside=e=>{if(e.target===overlay)finish(false)},key=e=>{if(e.key==='Escape')finish(false)};yes.addEventListener('click',accept);no.addEventListener('click',cancel);overlay.addEventListener('click',outside);document.addEventListener('keydown',key);no.focus()});
+  }
+  function initLearnWaDock(){
+    const dock=$('learnWaDock'),handle=$('moveLearnWa');if(!dock||!handle)return;
+    const key='folderLockerLearnWaDockPosition';let saved=null;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    function apply(side,offset,animate=true){dock.classList.toggle('dragging',!animate);dock.style.left='';dock.style.right='';dock.style.top='';dock.style.bottom='';
+      if(side==='left'||side==='right'){dock.style[side]='8px';dock.style.top=clamp(offset,8,Math.max(8,innerHeight-dock.offsetHeight-8))+'px'}
+      else{dock.style[side]='8px';dock.style.left=clamp(offset,8,Math.max(8,innerWidth-dock.offsetWidth-8))+'px'}
+      dock.dataset.side=side;dock.dataset.offset=String(offset);if(animate)dock.classList.remove('dragging');
+    }
+    function initial(){if(saved&&['left','right','top','bottom'].includes(saved.side)&&Number.isFinite(saved.offset))apply(saved.side,saved.offset);else apply('right',Math.max(8,innerHeight-125));}
+    let drag=null;
+    handle.addEventListener('pointerdown',e=>{e.preventDefault();const r=dock.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};dock.classList.add('dragging');try{handle.setPointerCapture(e.pointerId)}catch(err){}});
+    handle.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;const left=clamp(drag.left+dx,4,Math.max(4,innerWidth-dock.offsetWidth-4));const top=clamp(drag.top+dy,4,Math.max(4,innerHeight-dock.offsetHeight-4));dock.style.left=left+'px';dock.style.top=top+'px';dock.style.right='auto';dock.style.bottom='auto'});
+    handle.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const r=dock.getBoundingClientRect();let side,offset;if(r.left+r.width/2<innerWidth/2){side='left';offset=r.top}else{side='right';offset=r.top}if(r.top+r.height/2<innerHeight*.22){side='top';offset=r.left}else if(r.top+r.height/2>innerHeight*.78){side='bottom';offset=r.left}apply(side,offset);try{localStorage.setItem(key,JSON.stringify({side,offset}))}catch(err){}drag=null;setTimeout(()=>dock.classList.remove('dragging'),0)});
+    handle.addEventListener('pointercancel',()=>{drag=null;dock.classList.remove('dragging')});window.addEventListener('resize',()=>apply(dock.dataset.side||'right',Number(dock.dataset.offset)||8));initial();
+  }
+  initLearnWaDock();
  async function api(action,data={}) {
    const url=action==='load'?API+'?page='+encodeURIComponent(data.page||currentPage):API;
    const r=await fetch(url,{method:action==='load'?'GET':'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(action==='load'?{}:{body:JSON.stringify({action,...data})}),cache:'no-store'});
@@ -149,7 +185,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  }
  function isEditingAuthField(){
    const id=document.activeElement?.id||'';
-   return ['loginUsername','loginPassword','registerUsername','registerPassword','registerAvatar','systemSetupSecret','systemSetupPassword'].includes(id);
+   return ['loginUsername','loginPassword','registerUsername','registerPassword','registerConfirmPassword','registerAvatar','settingsCurrentPassword','settingsPassword','settingsConfirmPassword'].includes(id);
  }
  function showApp(user){
    currentUser=user;$('authPanel').hidden=true;$('communityApp').hidden=false;
@@ -194,8 +230,8 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
      const owner=currentUser&&p.authorId===currentUser.id;
      const liked=currentUser&&(p.likes||[]).includes(currentUser.id);
      const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="reply-item"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</b><p>${esc(c.text)}</p><span class="post-date">${esc(when(c.createdAt))}</span>
-       ${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item" style="margin:8px 0 0 10px"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'var(--cyan)'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</b><p>${esc(r.text)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div>`).join('')}
        ${(currentUser&&selectedPostId===p.id)?`<form class="reply-form" data-reply="${esc(c.id)}" data-post="${esc(p.id)}"><input name="text" maxlength="500" required placeholder="Reply to ${esc(c.authorName)}…"><button type="submit">Reply</button></form>`:''}
+       ${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item" style="margin:8px 0 0 10px"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'var(--cyan)'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</b><p>${esc(r.text)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div>`).join('')}
      </div>`).join('');
      return `<article class="post-card" data-post-card="${esc(p.id)}">
        <div class="post-author"><img class="post-avatar" src="${esc(p.authorAvatar||'/icon.png')}" alt=""><div class="post-author-meta"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(p.authorColor||'')?p.authorColor:'#e9faff'}">${esc(p.authorName)}${p.badge?` <span class="profile-badge">${esc(p.badge)}</span>`:''}</b><span class="post-date">${esc(when(p.createdAt))}${p.updatedAt?' • edited':''}</span></div></div>
@@ -206,8 +242,8 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
        ${selectedPostId===p.id?`<button type="button" data-action="back-posts">← Back to posts</button>`:`<button type="button" class="read-more-link" data-action="read-more" data-id="${esc(p.id)}">Read more</button>`}
        </div>
        ${owner?`<form class="edit-form" data-edit="${esc(p.id)}" hidden><textarea name="text" maxlength="1200" rows="3" required>${esc(p.text)}</textarea><div class="form-foot"><button type="submit">Save changes</button><button type="button" data-action="cancel-edit">Cancel</button></div></form>`:''}
-       <div class="reply-list">${comments}</div>
        ${(currentUser&&selectedPostId===p.id)?`<form class="reply-form" data-comment="${esc(p.id)}"><input name="text" maxlength="700" required placeholder="Write a text comment…"><button type="submit">Comment</button></form>`:(selectedPostId===p.id?'<p class="muted-small">Log in to comment or reply.</p>':'')}
+       <div class="reply-list">${comments}</div>
      </article>`;
    }).join('');
  }
@@ -222,23 +258,20 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    e.preventDefault();
    try{
      const avatarFile=$('registerAvatar').files[0];
+     const password=$('registerPassword').value,confirmPassword=$('registerConfirmPassword').value;
+     if(password!==confirmPassword){notice('Passwords do not match. Please enter the same password twice.','error');$('registerConfirmPassword').focus();return}
      validateAvatarFile(avatarFile);
-     const d=await api('register',{username:$('registerUsername').value.trim(),password:$('registerPassword').value});
-     token=d.token;localStorage.setItem(tokenKey,token);$('registerPassword').value='';$('registerAvatar').value='';currentPage=1;
+     const d=await api('register',{username:$('registerUsername').value.trim(),password,confirmPassword});
+     token=d.token;localStorage.setItem(tokenKey,token);$('registerPassword').value='';$('registerConfirmPassword').value='';$('registerAvatar').value='';currentPage=1;
      let message='Account created successfully.',type='success';
      if(avatarFile){try{await uploadAvatar(avatarFile)}catch(err){message='Account created, but the profile picture was not saved: '+err.message;type='error'}}
      await load();notice(message,type);
    }catch(err){notice(err.message,'error')}
  });
- $('systemSetupForm').addEventListener('submit',async e=>{
-   e.preventDefault();const setupSecret=$('systemSetupSecret').value,password=$('systemSetupPassword').value;
-   if(password.length<16||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password)){notice('Use at least 16 characters with uppercase, lowercase, a number, and a symbol.','error');return}
-   try{const d=await api('bootstrapSystem',{setupSecret,password});token=d.token;localStorage.setItem(tokenKey,token);$('systemSetupSecret').value='';$('systemSetupPassword').value='';notice('System administrator created.','success');await load()}catch(err){notice(err.message,'error')}
- });
  $('announcementForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('createAnnouncement',{title:$('announcementTitle').value.trim(),text:$('announcementBody').value.trim()});$('announcementTitle').value='';$('announcementBody').value='';notice('Official announcement published.','success');await load()}catch(err){notice(err.message,'error')}});
- $('announcementList').addEventListener('click',async e=>{const b=e.target.closest('[data-delete-announcement]');if(!b||currentUser?.role!=='admin')return;if(!confirm('Delete this official announcement?'))return;try{await api('deleteAnnouncement',{announcementId:b.dataset.deleteAnnouncement});await load()}catch(err){notice(err.message,'error')}});
+ $('announcementList').addEventListener('click',async e=>{const b=e.target.closest('[data-delete-announcement]');if(!b||currentUser?.role!=='admin')return;if(!await styledConfirm('Delete this official announcement?'))return;try{await api('deleteAnnouncement',{announcementId:b.dataset.deleteAnnouncement});await load()}catch(err){notice(err.message,'error')}});
  $('logoutButton').addEventListener('click',async()=>{
-   if(!confirm('Log out of the Folder Locker community?'))return;
+   if(!await styledConfirm('Log out of the Folder Locker community?'))return;
    try{await api('logout')}catch(e){}
    token='';localStorage.removeItem(tokenKey);currentUser=null;showAuth(true);notice('You have logged out.');await load();
  });
@@ -249,15 +282,20 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  });
  $('settingsForm').addEventListener('submit',async e=>{
    e.preventDefault();
-   const username=$('settingsUsername').value.trim(),password=$('settingsPassword').value,avatarFile=$('settingsAvatar').files[0];
-   if(!username&&!password&&!avatarFile){notice('Enter a new username, password, or profile picture first.');return}
+   const username=$('settingsUsername').value.trim(),currentPassword=$('settingsCurrentPassword').value,password=$('settingsPassword').value,confirmPassword=$('settingsConfirmPassword').value,avatarFile=$('settingsAvatar').files[0];
+   if(!username&&!password&&!currentPassword&&!confirmPassword&&!avatarFile){notice('Enter a new username, password, or profile picture first.');return}
+   if(password||currentPassword||confirmPassword){
+     if(!currentPassword||!password||!confirmPassword){notice('To change your password, enter your current password, new password, and confirm the new password.','error');return}
+     if(password!==confirmPassword){notice('The new passwords do not match.','error');$('settingsConfirmPassword').focus();return}
+     if(password.length<4||password.length>128){notice('The new password must be 4–128 characters.','error');return}
+   }
    try{validateAvatarFile(avatarFile)}catch(err){notice(err.message,'error');return}
-   if(!confirm('Save these account changes?'))return;
+   if(!await styledConfirm('Save these account changes?'))return;
    try{
      let d={user:currentUser};
-     if(username||password)d=await api('profile',{username,password});
+     if(username||password)d=await api('profile',{username,...(password?{currentPassword,password,confirmPassword}:{})});
      d=await api('updateAppearance',{displayNameColor:$('settingsNameColor').value,...(currentUser.role==='admin'?{badge:$('settingsBadge').value}:{})});
-     $('settingsPassword').value='';
+     $('settingsCurrentPassword').value='';$('settingsPassword').value='';$('settingsConfirmPassword').value='';
      if(avatarFile){
        try{d={user:await uploadAvatar(avatarFile)}}
        catch(err){$('settingsAvatar').value='';showApp(d.user);await load();notice('Account changes were saved, but the profile picture failed: '+err.message,'error');return}
@@ -272,9 +310,9 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    if(action==='back-posts'){selectedPostId='';await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
    if(action==='cancel-edit'){const f=b.closest('.edit-form');f.hidden=true;return}
    if(action==='edit'){const f=$('postsList').querySelector(`form[data-edit="${CSS.escape(id)}"]`);if(f)f.hidden=false;return}
-   if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!confirm('Administrator: permanently delete this post and its comments?'))return;try{await api('adminDeletePost',{postId:id});notice('Post removed by administrator.','success');await load()}catch(err){notice(err.message,'error')}return}
+   if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!await styledConfirm('Administrator: permanently delete this post and its comments?'))return;try{await api('adminDeletePost',{postId:id});notice('Post removed by administrator.','success');await load()}catch(err){notice(err.message,'error')}return}
    if(action==='delete'){
-     if(!confirm('Delete this post and all its comments? This cannot be undone.'))return;
+     if(!await styledConfirm('Delete this post and all its comments? This cannot be undone.'))return;
      try{await api('deletePost',{postId:id});notice('Post deleted.','success');await load()}catch(err){notice(err.message,'error')}return;
    }
    if(action==='like'){try{await api('likePost',{postId:id});await load()}catch(err){notice(err.message,'error')}}
@@ -283,7 +321,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    const f=e.target;
    try{
      if(f.matches('[data-edit]')){
-       e.preventDefault();if(!confirm('Save your edits to this post?'))return;
+       e.preventDefault();if(!await styledConfirm('Save your edits to this post?'))return;
        await api('editPost',{postId:f.dataset.edit,text:f.elements.text.value});notice('Post updated.','success');await load();
      }else if(f.matches('[data-comment]')){
        e.preventDefault();await api('comment',{postId:f.dataset.comment,text:f.elements.text.value});notice('Comment added.','success');await load();
