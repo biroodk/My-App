@@ -3,6 +3,8 @@ import { createKV, createAvatarStore } from '../lib/supabase-kv.mjs';
 
 // Simple persistent key-value storage hosted with this Netlify site.
 const DB = createKV('folder-locker-community-v2');
+// Read-only fallback for notes created by the earlier community edition.
+const LEGACY_DB = createKV('folder-locker-community-v1');
 const AVATARS = createAvatarStore();
 const PAGE_SIZE = 20;
 const AVATAR_LIMIT = 3 * 1024 * 1024;
@@ -39,6 +41,53 @@ async function listJSON(prefix) {
   const found = await DB.list({ prefix });
   if (!found.blobs?.length) return [];
   return (await Promise.all(found.blobs.map(item => getJSON(item.key)))).filter(Boolean);
+}
+const LEGACY_NOTE_PREFIXES = ['admin-notes/', 'adminNotes/', 'notes/', 'admin/notes/'];
+async function listFromStore(store, prefix) {
+  try {
+    const found = await store.list({ prefix });
+    if (!found.blobs?.length) return [];
+    return (await Promise.all(found.blobs.map(async item => ({ key: item.key, value: await store.get(item.key) })))).filter(item => item.value);
+  } catch { return []; }
+}
+function normalizeAdminNote(item, key = '') {
+  const note = item && typeof item === 'object' ? item : {};
+  const id = String(note.id || key.split('/').pop() || randomId());
+  const title = clean(note.title || note.subject || 'Untitled admin note', 100);
+  const text = clean(note.text ?? note.body ?? note.content ?? note.message ?? '', 4000);
+  if (!text) return null;
+  return { id, title, text, authorId: note.authorId || note.userId || '', createdAt: note.createdAt || note.created || note.timestamp || '', updatedAt: note.updatedAt || note.modifiedAt || '', updatedBy: note.updatedBy || '', _storageKey: key };
+}
+async function listAdminNotes() {
+  const found = [];
+  for (const prefix of LEGACY_NOTE_PREFIXES) {
+    const current = await listFromStore(DB, prefix);
+    found.push(...current.map(row => normalizeAdminNote(row.value, row.key)).filter(Boolean));
+  }
+  // Older deployment used the v1 store. It is optional; its absence must not break the dashboard.
+  for (const prefix of LEGACY_NOTE_PREFIXES) {
+    const old = await listFromStore(LEGACY_DB, prefix);
+    found.push(...old.map(row => normalizeAdminNote(row.value, row.key)).filter(Boolean).map(note => ({ ...note, _legacyStore: true })));
+  }
+  const unique = new Map();
+  for (const note of found) {
+    const prior = unique.get(note.id);
+    if (!prior || (!note._legacyStore && prior._legacyStore) || String(note.updatedAt || note.createdAt) > String(prior.updatedAt || prior.createdAt)) unique.set(note.id, note);
+  }
+  return [...unique.values()].sort((a,b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+}
+async function findAdminNote(id) {
+  const notes = await listAdminNotes();
+  return notes.find(note => note.id === id) || null;
+}
+async function saveCanonicalAdminNote(note) {
+  const key = `admin-notes/${note.id}`;
+  const saved = { ...note };
+  delete saved._storageKey; delete saved._legacyStore;
+  await putJSON(key, saved);
+  if (note._storageKey && note._storageKey !== key) {
+    try { await (note._legacyStore ? LEGACY_DB : DB).delete(note._storageKey); } catch {}
+  }
 }
 async function getUser(id) { return id ? getJSON(`users/${id}`) : null; }
 async function findUserByName(username) {
@@ -104,7 +153,7 @@ async function loadPage(page, user) {
 async function adminDashboard() {
   const [users, posts, comments, replies, announcements, notes, likes, chatMode] = await Promise.all([
     listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'),
-    listJSON('announcements/'), listJSON('admin-notes/'), listJSON('likes/'), getJSON('meta/chat-paused')
+    listJSON('announcements/'), listAdminNotes(), listJSON('likes/'), getJSON('meta/chat-paused')
   ]);
   const userMap = new Map(users.map(user => [user.id, user]));
   const postMap = new Map(posts.map(post => [post.id, post]));
@@ -305,16 +354,19 @@ async function communityHandler(request) {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
       const id = clean(body.noteId, 80), title = clean(body.title, 100), text = clean(body.text, 4000);
       if (!title || !text) return reply({ error: 'A note title and note text are required.' }, 400);
-      const note = await getJSON(`admin-notes/${id}`);
+      const note = await findAdminNote(id);
       if (!note) return reply({ error: 'Admin note not found.' }, 404);
       note.title = title; note.text = text; note.updatedAt = new Date().toISOString(); note.updatedBy = user.id;
-      await putJSON(`admin-notes/${id}`, note);
+      await saveCanonicalAdminNote(note);
       return reply({ ok: true });
     }
     if (action === 'deleteAdminNote') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      const id = clean(body.noteId, 80);
-      if (!(await getJSON(`admin-notes/${id}`))) return reply({ error: 'Admin note not found.' }, 404);
+      const id = clean(body.noteId, 80), note = await findAdminNote(id);
+      if (!note) return reply({ error: 'Admin note not found.' }, 404);
+      if (note._storageKey) {
+        try { await (note._legacyStore ? LEGACY_DB : DB).delete(note._storageKey); } catch {}
+      }
       await DB.delete(`admin-notes/${id}`);
       return reply({ ok: true });
     }
@@ -408,6 +460,33 @@ async function communityHandler(request) {
       if (action === 'deletePost' && post.authorId !== user.id) return reply({ error: 'Only the post owner can delete it.' }, 403);
       await removePostData(postId);
       return reply({ ok: true });
+    }
+    if (action === 'adminBulkDeletePosts') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const ids = [...new Set((Array.isArray(body.postIds) ? body.postIds : []).map(id => clean(id, 80)).filter(Boolean))].slice(0, 100);
+      if (!ids.length) return reply({ error: 'Select at least one post.' }, 400);
+      let deleted = 0;
+      for (const id of ids) { if (await getJSON(`posts/${id}`)) { await removePostData(id); deleted++; } }
+      return reply({ ok: true, deleted });
+    }
+    if (action === 'adminBulkDeleteComments') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const ids = [...new Set((Array.isArray(body.commentIds) ? body.commentIds : []).map(id => clean(id, 80)).filter(Boolean))].slice(0, 100);
+      if (!ids.length) return reply({ error: 'Select at least one comment.' }, 400);
+      let deleted = 0;
+      const allReplies = await listJSON('replies/');
+      const repliesByComment = new Map();
+      for (const replyItem of allReplies) {
+        if (!repliesByComment.has(replyItem.commentId)) repliesByComment.set(replyItem.commentId, []);
+        repliesByComment.get(replyItem.commentId).push(replyItem);
+      }
+      for (const id of ids) {
+        const comment = await getJSON(`comments/${id}`);
+        if (!comment) continue;
+        await Promise.all((repliesByComment.get(id) || []).map(replyItem => DB.delete(`replies/${replyItem.id}`)));
+        await DB.delete(`comments/${id}`); deleted++;
+      }
+      return reply({ ok: true, deleted });
     }
     if (action === 'likePost') {
       const postId = clean(body.postId, 80), post = await getJSON(`posts/${postId}`);
