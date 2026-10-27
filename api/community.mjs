@@ -85,11 +85,12 @@ async function loadPage(page, user) {
   const pageIds = new Set(pagePosts.map(item => item.id));
   const relevantComments = allComments.filter(item => pageIds.has(item.postId)).sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   const relevantCommentIds = new Set(relevantComments.map(item => item.id));
-  const relevantReplies = allReplies.filter(item => relevantCommentIds.has(item.commentId)).sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  // Newest replies are presented first within each comment.
+  const relevantReplies = allReplies.filter(item => relevantCommentIds.has(item.commentId)).sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   const commentResults = relevantComments.map(comment => {
     const author = userMap.get(comment.authorId);
-    return { id: comment.id, postId: comment.postId, authorId: comment.authorId, authorName: author?.username || 'Community member', authorColor: author?.displayNameColor || '#e9faff', badge: author?.badge || '', role: author?.role || 'user', text: comment.text, createdAt: comment.createdAt,
-      replies: relevantReplies.filter(item => item.commentId === comment.id).map(item => { const replyAuthor = userMap.get(item.authorId); return { id: item.id, authorId: item.authorId, authorName: replyAuthor?.username || 'Community member', authorColor: replyAuthor?.displayNameColor || '#e9faff', badge: replyAuthor?.badge || '', role: replyAuthor?.role || 'user', text: item.text, createdAt: item.createdAt }; }) };
+    return { id: comment.id, postId: comment.postId, authorId: comment.authorId, authorName: author?.username || 'Community member', authorColor: author?.displayNameColor || '#e9faff', authorAvatar: avatarUrl(author), badge: author?.badge || '', role: author?.role || 'user', text: comment.text, createdAt: comment.createdAt,
+      replies: relevantReplies.filter(item => item.commentId === comment.id).map(item => { const replyAuthor = userMap.get(item.authorId); return { id: item.id, authorId: item.authorId, authorName: replyAuthor?.username || 'Community member', authorColor: replyAuthor?.displayNameColor || '#e9faff', authorAvatar: avatarUrl(replyAuthor), badge: replyAuthor?.badge || '', role: replyAuthor?.role || 'user', text: item.text, createdAt: item.createdAt }; }) };
   });
   const posts = await Promise.all(pagePosts.map(async post => {
     const author = userMap.get(post.authorId);
@@ -97,12 +98,60 @@ async function loadPage(page, user) {
     return { id: post.id, authorId: post.authorId, authorName: author?.username || 'Community member', authorColor: author?.displayNameColor || '#e9faff', badge: author?.badge || '', authorRole: author?.role || 'user', authorAvatar: avatarUrl(author), text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || '', likes, comments: commentResults.filter(item => item.postId === post.id) };
   }));
   const announcements = allAnnouncements.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,10).map(item => ({ id:item.id, title:item.title, body:item.body, createdAt:item.createdAt, authorName:userMap.get(item.authorId)?.username || 'System' }));
-  return { user: user ? publicUser(user) : null, posts, announcements, page, pageSize: PAGE_SIZE, total, hasMore: offset + posts.length < total };
+  const chatMode = await getJSON('meta/chat-paused');
+  return { user: user ? publicUser(user) : null, posts, announcements, chatPaused: !!chatMode?.paused, page, pageSize: PAGE_SIZE, total, hasMore: offset + posts.length < total };
 }
 async function adminDashboard() {
-  const [users, posts, comments, announcements] = await Promise.all([listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('announcements/')]);
-  const recentUsers = users.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,25).map(user => ({ id:user.id, username:user.username, role:user.role || 'user', createdAt:user.createdAt, avatar:avatarUrl(user), displayNameColor:user.displayNameColor || '#e9faff', badge:user.badge || '' }));
-  return { stats: { users:users.length, posts:posts.length, comments:comments.length, announcements:announcements.length }, recentUsers };
+  const [users, posts, comments, replies, announcements, notes, likes, chatMode] = await Promise.all([
+    listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'),
+    listJSON('announcements/'), listJSON('admin-notes/'), listJSON('likes/'), getJSON('meta/chat-paused')
+  ]);
+  const userMap = new Map(users.map(user => [user.id, user]));
+  const postMap = new Map(posts.map(post => [post.id, post]));
+  const commentMap = new Map(comments.map(comment => [comment.id, comment]));
+  const postCounts = new Map(), commentCounts = new Map(), replyCounts = new Map(), likeCounts = new Map(), likesPerPost = new Map();
+  for (const item of posts) postCounts.set(item.authorId, (postCounts.get(item.authorId) || 0) + 1);
+  for (const item of comments) commentCounts.set(item.authorId, (commentCounts.get(item.authorId) || 0) + 1);
+  for (const item of replies) replyCounts.set(item.authorId, (replyCounts.get(item.authorId) || 0) + 1);
+  for (const item of likes) { likeCounts.set(item.userId, (likeCounts.get(item.userId) || 0) + 1); likesPerPost.set(item.postId, (likesPerPost.get(item.postId) || 0) + 1); }
+  const publicAdminUser = user => ({
+    id: user.id, username: user.username, role: user.role || 'user', createdAt: user.createdAt,
+    avatar: avatarUrl(user), displayNameColor: user.displayNameColor || '#e9faff', badge: user.badge || '',
+    postCount: postCounts.get(user.id) || 0, commentCount: commentCounts.get(user.id) || 0,
+    replyCount: replyCounts.get(user.id) || 0, likeCount: likeCounts.get(user.id) || 0
+  });
+  const details = {
+    users: users.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(publicAdminUser),
+    posts: posts.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(post => ({
+      id: post.id, authorId: post.authorId, authorName: userMap.get(post.authorId)?.username || 'Community member',
+      authorRole: userMap.get(post.authorId)?.role || 'user', text: post.text, createdAt: post.createdAt,
+      updatedAt: post.updatedAt || '', likeCount: likesPerPost.get(post.id) || 0,
+      commentCount: comments.filter(comment => comment.postId === post.id).length
+    })),
+    comments: comments.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(comment => ({
+      id: comment.id, postId: comment.postId, postText: (postMap.get(comment.postId)?.text || '').slice(0,160),
+      authorName: userMap.get(comment.authorId)?.username || 'Community member', text: comment.text, createdAt: comment.createdAt,
+      replyCount: replies.filter(reply => reply.commentId === comment.id).length
+    })),
+    replies: replies.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(item => {
+      const comment = commentMap.get(item.commentId);
+      return { id: item.id, commentId: item.commentId, postId: comment?.postId || '',
+        authorName: userMap.get(item.authorId)?.username || 'Community member',
+        commentText: (comment?.text || '').slice(0,160), text: item.text, createdAt: item.createdAt };
+    }),
+    likes: likes.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(item => ({
+      userName:userMap.get(item.userId)?.username || 'Community member', postText:(postMap.get(item.postId)?.text || '').slice(0,160), createdAt:item.createdAt
+    })),
+    announcements: announcements.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(item => ({
+      id:item.id, title:item.title, body:item.body, createdAt:item.createdAt,
+      authorName:userMap.get(item.authorId)?.username || 'System'
+    })),
+    notes: notes.sort((a,b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt))).map(item => ({
+      id:item.id, title:item.title, text:item.text, createdAt:item.createdAt, updatedAt:item.updatedAt || '',
+      authorName:userMap.get(item.authorId)?.username || 'Admin'
+    }))
+  };
+  return { stats: { users:users.length, posts:posts.length, comments:comments.length, replies:replies.length, likes:likes.length, announcements:announcements.length, adminNotes:notes.length }, recentUsers: details.users.slice(0,25), details, chatPaused: !!chatMode?.paused };
 }
 async function removePostData(postId) {
   const [comments, replies, likes] = await Promise.all([listJSON('comments/'), listJSON('replies/'), listJSON(`likes/${postId}/`)]);
@@ -224,6 +273,51 @@ async function communityHandler(request) {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
       return reply(await adminDashboard());
     }
+    if (action === 'createAdminAccount') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const adminName = clean(body.username || 'SanShania', 24);
+      const pass = body.password;
+      if (!validateUsername(adminName)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
+      if (typeof pass !== 'string' || pass.length < 20 || pass.length > 128 || !/[A-Z]/.test(pass) || !/[a-z]/.test(pass) || !/[0-9]/.test(pass) || !/[^A-Za-z0-9]/.test(pass)) return reply({ error: 'Admin passwords must be 20–128 characters and include uppercase, lowercase, a number, and a symbol.' }, 400);
+      if (pass !== body.confirmPassword) return reply({ error: 'Admin passwords do not match.' }, 400);
+      const created = userRecord(adminName, passwordHash(pass), 'admin');
+      created.badge = 'Admin';
+      if (!(await reserveUsername(adminName, created.id))) return reply({ error: 'That username already exists.' }, 409);
+      try { await putJSON(`users/${created.id}`, created, { onlyIfNew: true }); }
+      catch (error) { await DB.delete(`usernames/${adminName.toLowerCase()}`); throw error; }
+      return reply({ ok: true, username: adminName, message: 'Administrator account created. The new admin can log in normally.' }, 201);
+    }
+    if (action === 'setChatMode') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (typeof body.paused !== 'boolean') return reply({ error: 'Choose whether to pause or resume community chat.' }, 400);
+      await putJSON('meta/chat-paused', { paused: body.paused, changedAt: new Date().toISOString(), changedBy: user.id });
+      return reply({ ok: true, paused: body.paused });
+    }
+    if (action === 'createAdminNote') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const title = clean(body.title, 100), text = clean(body.text, 4000);
+      if (!title || !text) return reply({ error: 'A note title and note text are required.' }, 400);
+      const note = { id: randomId(), authorId: user.id, title, text, createdAt: new Date().toISOString(), updatedAt: '' };
+      await putJSON(`admin-notes/${note.id}`, note, { onlyIfNew: true });
+      return reply({ ok: true, note }, 201);
+    }
+    if (action === 'editAdminNote') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const id = clean(body.noteId, 80), title = clean(body.title, 100), text = clean(body.text, 4000);
+      if (!title || !text) return reply({ error: 'A note title and note text are required.' }, 400);
+      const note = await getJSON(`admin-notes/${id}`);
+      if (!note) return reply({ error: 'Admin note not found.' }, 404);
+      note.title = title; note.text = text; note.updatedAt = new Date().toISOString(); note.updatedBy = user.id;
+      await putJSON(`admin-notes/${id}`, note);
+      return reply({ ok: true });
+    }
+    if (action === 'deleteAdminNote') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const id = clean(body.noteId, 80);
+      if (!(await getJSON(`admin-notes/${id}`))) return reply({ error: 'Admin note not found.' }, 404);
+      await DB.delete(`admin-notes/${id}`);
+      return reply({ ok: true });
+    }
     if (action === 'uploadAvatar') {
       const mime = clean(body.mimeType, 80).toLowerCase();
       const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif']);
@@ -288,6 +382,8 @@ async function communityHandler(request) {
       return reply({ ok: true });
     }
     if (action === 'createPost') {
+      const chatMode = await getJSON('meta/chat-paused');
+      if (chatMode?.paused && !isAdmin(user)) return reply({ error: 'Community chat is paused. Only administrators can publish posts until chat is resumed.' }, 403);
       const text = clean(body.text, 1200);
       if (!text) return reply({ error: 'Write something before publishing.' }, 400);
       const post = { id: randomId(), authorId: user.id, text, createdAt: new Date().toISOString(), updatedAt: '' };
@@ -297,6 +393,8 @@ async function communityHandler(request) {
     if (action === 'editPost') {
       const postId = clean(body.postId, 80), text = clean(body.text, 1200);
       if (!text) return reply({ error: 'Post cannot be empty.' }, 400);
+      const chatMode = await getJSON('meta/chat-paused');
+      if (chatMode?.paused && !isAdmin(user)) return reply({ error: 'Members cannot publish or edit posts while community chat is paused.' }, 403);
       const post = await getJSON(`posts/${postId}`);
       if (!post) return reply({ error: 'Post not found.' }, 404);
       if (post.authorId !== user.id) return reply({ error: 'Only the post owner can edit it.' }, 403);
@@ -312,8 +410,13 @@ async function communityHandler(request) {
       return reply({ ok: true });
     }
     if (action === 'likePost') {
-      const postId = clean(body.postId, 80);
-      if (!(await getJSON(`posts/${postId}`))) return reply({ error: 'Post not found.' }, 404);
+      const postId = clean(body.postId, 80), post = await getJSON(`posts/${postId}`);
+      if (!post) return reply({ error: 'Post not found.' }, 404);
+      const chatMode = await getJSON('meta/chat-paused');
+      if (chatMode?.paused && !isAdmin(user)) {
+        const postAuthor = await getUser(post.authorId);
+        if (!isAdmin(postAuthor)) return reply({ error: 'While chat is paused, members can like administrator posts only.' }, 403);
+      }
       const key = `likes/${postId}/${user.id}`;
       if (await getJSON(key)) await DB.delete(key);
       else await putJSON(key, { postId, userId: user.id, createdAt: new Date().toISOString() }, { onlyIfNew: true });
@@ -322,7 +425,13 @@ async function communityHandler(request) {
     if (action === 'comment') {
       const postId = clean(body.postId, 80), text = clean(body.text, 700);
       if (!text) return reply({ error: 'Write a text comment first.' }, 400);
-      if (!(await getJSON(`posts/${postId}`))) return reply({ error: 'Post not found.' }, 404);
+      const post = await getJSON(`posts/${postId}`);
+      if (!post) return reply({ error: 'Post not found.' }, 404);
+      const chatMode = await getJSON('meta/chat-paused');
+      if (chatMode?.paused && !isAdmin(user)) {
+        const postAuthor = await getUser(post.authorId);
+        if (!isAdmin(postAuthor)) return reply({ error: 'While chat is paused, members may comment on administrator posts only.' }, 403);
+      }
       const comment = { id: randomId(), postId, authorId: user.id, text, createdAt: new Date().toISOString() };
       await putJSON(`comments/${comment.id}`, comment, { onlyIfNew: true });
       return reply({ ok: true }, 201);
@@ -332,6 +441,11 @@ async function communityHandler(request) {
       if (!text) return reply({ error: 'Write a text reply first.' }, 400);
       const comment = await getJSON(`comments/${commentId}`);
       if (!comment || comment.postId !== postId) return reply({ error: 'Comment not found.' }, 404);
+      const chatMode = await getJSON('meta/chat-paused');
+      if (chatMode?.paused && !isAdmin(user)) {
+        const post = await getJSON(`posts/${postId}`), postAuthor = await getUser(post?.authorId);
+        if (!isAdmin(postAuthor)) return reply({ error: 'While chat is paused, members may reply under administrator posts only.' }, 403);
+      }
       const item = { id: randomId(), commentId, authorId: user.id, text, createdAt: new Date().toISOString() };
       await putJSON(`replies/${item.id}`, item, { onlyIfNew: true });
       return reply({ ok: true }, 201);

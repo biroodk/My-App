@@ -434,8 +434,9 @@ public class MainActivity extends Activity {
     }
 
     private void seedSampleFiles(){
-        // Replace the exact old bundled video only; preserve user-owned video1.mp4 files.
+        // Replace the exact old bundled video/PDF samples only; preserve user-owned files.
         migrateLegacySampleVideoIfMatching("a79d8ee8c13eda555522c5c7efa8f90dc63f8d9fd75b7fcde0fda537ade3461b");
+        migrateLegacySamplePdfIfMatching("21618b1ee4ca7d539f2650e5ba151de7c030d54c733fc7119489440be059e173");
         // Migrate the old bundled audio samples before ensuring the current sample set.
         // Content hashes prevent this cleanup from deleting user audio with the same filename.
         migrateSampleSoundFiles();
@@ -470,6 +471,31 @@ public class MainActivity extends Activity {
         if (previous.exists()) return; // Leave an earlier interrupted migration untouched.
         try (InputStream in = getAssets().open("video1.mp4");
              OutputStream out = new FileOutputStream(temporary)) {
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            out.flush();
+            if (!temporary.isFile() || temporary.length() <= 0) { temporary.delete(); return; }
+            if (!current.renameTo(previous)) { temporary.delete(); return; }
+            if (temporary.renameTo(current)) {
+                previous.delete();
+            } else {
+                previous.renameTo(current);
+                temporary.delete();
+            }
+        } catch (Exception ignored) {
+            if (temporary.exists()) temporary.delete();
+            if (!current.exists() && previous.exists()) previous.renameTo(current);
+        }
+    }
+
+    private void migrateLegacySamplePdfIfMatching(String oldSampleSha256){
+        File current = new File(vaultRoot, "About.pdf");
+        if (!current.isFile() || !oldSampleSha256.equals(fileSha256(current))) return;
+        File temporary = new File(vaultRoot, ".About.pdf.migration");
+        File previous = new File(vaultRoot, ".About.pdf.previous-sample");
+        if (previous.exists()) return; // Leave any interrupted previous migration untouched.
+        try (InputStream in = getAssets().open("About.pdf"); OutputStream out = new FileOutputStream(temporary)) {
             byte[] buffer = new byte[65536];
             int count;
             while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);

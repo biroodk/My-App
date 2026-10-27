@@ -82,3 +82,15 @@ Preferred setup method (system password is never sent in the provisioning reques
 4. Open `/community.html` and use the normal **Log in** form with username `FolderLockerAdmin` and the generated password. Administrator-only features remain available.
 
 The password must be at least 20 characters and include uppercase, lowercase, a number, and a symbol. Keep it private and never commit it to Git. If the system account already exists, the endpoint will not overwrite its password or role. The older one-time `SYSTEM_SETUP_SECRET` form remains available as a fallback for an account that has not yet been created.
+
+
+## Import your replacement sample video and PDF (Termux)
+
+Place the new files in Android Downloads as exactly `video1.mp4` and `About.pdf`. After extracting this project, run:
+
+```bash
+cd "$HOME/Folder-Locker-Final-v3-FIXED/Folder-Locker-Final-v3" || exit 1
+bash tools/update-downloaded-assets.sh
+```
+
+The script validates both files and refuses to import the known old bundled samples. Once copied, rebuild and install the new APK. Existing vault files are replaced only when their SHA-256 matches the previous shipped sample, so user-owned files with those names are preserved.

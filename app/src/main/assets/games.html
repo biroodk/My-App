@@ -41,7 +41,7 @@
     a{text-decoration:none;color:white}
     .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;padding:20px}.popup-overlay.show{display:flex}
     .popup-box{width:320px;background:linear-gradient(135deg,#000040,#020a1e);border:2px solid #0ff;border-radius:18px;padding:20px;box-shadow:0 0 30px #0ff;text-align:center}.popup-title{font-size:18px;font-weight:800;color:#0ff;margin-bottom:8px}.popup-msg{font-size:13px;color:#c0d0f0;margin-bottom:16px}.popup-btn{width:100%;height:44px;background:linear-gradient(90deg,#0ff,#0a8cff);border:none;border-radius:12px;font-weight:800;color:#000;cursor:pointer}
-    
+
     #postBtn{
 color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px solid rgba(0,255,255,0.3);padding:4px 8px;border-radius:20px;background:rgba(0,255,255,0.08);
 }
@@ -94,7 +94,7 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
 </head>
 <body>
 <section>
-  
+
   <div id="customAlert" class="custom-alert">
     🚀 Coming Soon
 </div>
@@ -131,11 +131,14 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
     <div class="tip">✨ More games coming soon and they will appear here
     </div>
 <div class="game-action-row" aria-label="Folder Locker actions">
-  <a href="#" id="shareAppButton" class="game-action" onclick="return shareFolderLocker(event)">🛒 Share this app</a>
-  <a href="https://chat.whatsapp.com/GqKi4FjlWJf5zzCc2692v5?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" class="game-action" onclick="return openFolderLockerLink(event,this.href)">🤝 Join us on WhatsApp</a>
+
+  <a href="#" id="shareAppButton" class="game-action" onclick="return shareFolderLocker(event)"style="font-size: 12px">🛒 Share this app</a>
+  <a href="https://chat.whatsapp.com/GqKi4FjlWJf5zzCc2692v5?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" class="game-action" onclick="return openFolderLockerLink(event,this.href)" style="font-size: 12px">🤝 Join us on WhatsApp</a>
 </div>
-<a href="https://wa.me/256709387311?text=I%20would%20like%20to%20learn%20coding%20with%20you.%20Please" class="game-action game-action-left" onclick="return openFolderLockerLink(event,this.href)">👨‍💻 Learn Coding</a>
-<a href="https://folder-locker-my-first-app.vercel.app/" class="game-action game-action-right" onclick="return openFolderLockerLink(event,this.href)">🌐 Go Online</a>
+<a href="https://wa.me/256709387311?text=I%20would%20like%20to%20learn%20coding%20with%20you.%20Please" class="game-action game-action-left" onclick="return openFolderLockerLink(event,this.href)" style="font-size: 12px">👨‍💻 Learn Coding</a>
+<a href="https://folder-locker-my-first-app.vercel.app/" class="game-action game-action-right" onclick="return openFolderLockerLink(event,this.href)"
+style="font-size: 12px">🌐 Go Online</a>
+
   </main>
 
   <footer>
@@ -147,11 +150,10 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
 </section>
 <div class="popup-overlay" id="popup"><div class="popup-box"><div style="font-size:42px">🎮</div><div class="popup-title" id="pTitle">Games</div><div class="popup-msg" id="pMsg">Game page unavailable.</div><button class="popup-btn" onclick="closePopup()">OK</button></div></div>
 <script src="vault.js"></script>
-  
+
   <script>
 if(typeof requireUnlock==='function' && !requireUnlock()) throw new Error('locked');
 function closePopup(){document.getElementById('popup').classList.remove('show')}
-// Replace this value with the real Netlify URL after the install page is deployed.
 
 const FOLDER_LOCKER_INSTALL_URL='https://folder-locker-my-first-app.vercel.app/';
 function openFolderLockerLink(event,url){
