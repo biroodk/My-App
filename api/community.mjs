@@ -151,9 +151,9 @@ async function loadPage(page, user) {
   return { user: user ? publicUser(user) : null, posts, announcements, chatPaused: !!chatMode?.paused, page, pageSize: PAGE_SIZE, total, hasMore: offset + posts.length < total };
 }
 async function adminDashboard() {
-  const [users, posts, comments, replies, announcements, notes, likes, chatMode] = await Promise.all([
+  const [users, posts, comments, replies, announcements, notes, likes, chatMode, recycleBin] = await Promise.all([
     listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'),
-    listJSON('announcements/'), listAdminNotes(), listJSON('likes/'), getJSON('meta/chat-paused')
+    listJSON('announcements/'), listAdminNotes(), listJSON('likes/'), getJSON('meta/chat-paused'), listJSON('recycle-bin/posts/')
   ]);
   const userMap = new Map(users.map(user => [user.id, user]));
   const postMap = new Map(posts.map(post => [post.id, post]));
@@ -192,15 +192,20 @@ async function adminDashboard() {
       userName:userMap.get(item.userId)?.username || 'Community member', postText:(postMap.get(item.postId)?.text || '').slice(0,160), createdAt:item.createdAt
     })),
     announcements: announcements.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(item => ({
-      id:item.id, title:item.title, body:item.body, createdAt:item.createdAt,
+      id:item.id, title:item.title, body:item.body, createdAt:item.createdAt, updatedAt:item.updatedAt || '',
       authorName:userMap.get(item.authorId)?.username || 'System'
     })),
     notes: notes.sort((a,b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt))).map(item => ({
       id:item.id, title:item.title, text:item.text, createdAt:item.createdAt, updatedAt:item.updatedAt || '',
       authorName:userMap.get(item.authorId)?.username || 'Admin'
+    })),
+    recycleBin: recycleBin.sort((a,b) => Number(b.deletedAt ? Date.parse(b.deletedAt) : 0) - Number(a.deletedAt ? Date.parse(a.deletedAt) : 0)).map(item => ({
+      id:item.id, text:item.post?.text || '', authorName:userMap.get(item.post?.authorId)?.username || 'Community member',
+      deletedAt:item.deletedAt || '', expiresAt:Number.isFinite(Number(item.expiresAt)) ? new Date(Number(item.expiresAt)).toISOString() : '',
+      commentCount:(item.comments || []).length, replyCount:(item.replies || []).length
     }))
   };
-  return { stats: { users:users.length, posts:posts.length, comments:comments.length, replies:replies.length, likes:likes.length, announcements:announcements.length, adminNotes:notes.length }, recentUsers: details.users.slice(0,25), details, chatPaused: !!chatMode?.paused };
+  return { stats: { users:users.length, posts:posts.length, comments:comments.length, replies:replies.length, likes:likes.length, announcements:announcements.length, adminNotes:notes.length, recycleBin:recycleBin.length }, recentUsers: details.users.slice(0,25), details, chatPaused: !!chatMode?.paused };
 }
 async function removePostData(postId) {
   const [comments, replies, likes] = await Promise.all([listJSON('comments/'), listJSON('replies/'), listJSON(`likes/${postId}/`)]);
@@ -212,12 +217,54 @@ async function removePostData(postId) {
     DB.delete(`posts/${postId}`)
   ]);
 }
+const RECYCLE_BIN_TTL_MS = 30 * 60 * 1000;
+async function softDeletePost(postId, deletedBy) {
+  const post = await getJSON(`posts/${postId}`);
+  if (!post) return false;
+  const [allComments, allReplies, likes] = await Promise.all([
+    listJSON('comments/'), listJSON('replies/'), listJSON(`likes/${postId}/`)
+  ]);
+  const comments = allComments.filter(item => item.postId === postId);
+  const commentIds = new Set(comments.map(item => item.id));
+  const replies = allReplies.filter(item => commentIds.has(item.commentId));
+  const deletedAt = new Date().toISOString();
+  const trash = { id: postId, post, comments, replies, likes, deletedBy, deletedAt, expiresAt: Date.now() + RECYCLE_BIN_TTL_MS };
+  // Save the complete snapshot before removing live records, so a failed delete remains recoverable.
+  await putJSON(`recycle-bin/posts/${postId}`, trash);
+  await removePostData(postId);
+  return true;
+}
+async function cleanupExpiredRecycleBin() {
+  try {
+    const items = await listJSON('recycle-bin/posts/');
+    const now = Date.now();
+    await Promise.all(items.filter(item => Number(item.expiresAt || 0) <= now).map(item => DB.delete(`recycle-bin/posts/${item.id}`)));
+  } catch (error) {
+    // Cleanup is best-effort; it must not prevent community browsing during a temporary storage issue.
+  }
+}
+async function restoreTrashedPost(postId) {
+  const trash = await getJSON(`recycle-bin/posts/${postId}`);
+  if (!trash) return false;
+  if (Number(trash.expiresAt || 0) <= Date.now()) {
+    await DB.delete(`recycle-bin/posts/${postId}`);
+    return false;
+  }
+  if (await getJSON(`posts/${postId}`)) throw new Error('A live post with this ID already exists. The recycle-bin copy was left untouched.');
+  await putJSON(`posts/${postId}`, trash.post);
+  for (const comment of trash.comments || []) await putJSON(`comments/${comment.id}`, comment);
+  for (const item of trash.replies || []) await putJSON(`replies/${item.id}`, item);
+  for (const like of trash.likes || []) await putJSON(`likes/${postId}/${like.userId}`, like);
+  await DB.delete(`recycle-bin/posts/${postId}`);
+  return true;
+}
 
 async function communityHandler(request) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (request.method !== 'GET' && request.method !== 'POST') return reply({ error: 'Method not allowed.' }, 405);
   try {
     const url = new URL(request.url);
+    await cleanupExpiredRecycleBin();
     if (request.method === 'GET') {
       const avatarId = clean(url.searchParams.get('avatar'), 80);
       if (avatarId) {
@@ -428,9 +475,21 @@ async function communityHandler(request) {
       await putJSON(`announcements/${announcement.id}`, announcement, { onlyIfNew: true });
       return reply({ ok: true, announcement }, 201);
     }
+    if (action === 'editAnnouncement') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const id = clean(body.announcementId, 80), title = clean(body.title, 100), text = clean(body.text, 2000);
+      if (!title || !text) return reply({ error: 'Announcement title and body are required.' }, 400);
+      const announcement = await getJSON(`announcements/${id}`);
+      if (!announcement) return reply({ error: 'Announcement not found.' }, 404);
+      announcement.title = title; announcement.body = text; announcement.updatedAt = new Date().toISOString(); announcement.updatedBy = user.id;
+      await putJSON(`announcements/${id}`, announcement);
+      return reply({ ok: true, announcement });
+    }
     if (action === 'deleteAnnouncement') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      await DB.delete(`announcements/${clean(body.announcementId, 80)}`);
+      const id = clean(body.announcementId, 80);
+      if (!(await getJSON(`announcements/${id}`))) return reply({ error: 'Announcement not found.' }, 404);
+      await DB.delete(`announcements/${id}`);
       return reply({ ok: true });
     }
     if (action === 'createPost') {
@@ -458,16 +517,32 @@ async function communityHandler(request) {
       if (!post) return reply({ error: 'Post not found.' }, 404);
       if (action === 'adminDeletePost' && !isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
       if (action === 'deletePost' && post.authorId !== user.id) return reply({ error: 'Only the post owner can delete it.' }, 403);
-      await removePostData(postId);
-      return reply({ ok: true });
+      await softDeletePost(postId, user.id);
+      return reply({ ok: true, recycleBinExpiresInSeconds: 1800 });
     }
     if (action === 'adminBulkDeletePosts') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
       const ids = [...new Set((Array.isArray(body.postIds) ? body.postIds : []).map(id => clean(id, 80)).filter(Boolean))].slice(0, 100);
       if (!ids.length) return reply({ error: 'Select at least one post.' }, 400);
       let deleted = 0;
-      for (const id of ids) { if (await getJSON(`posts/${id}`)) { await removePostData(id); deleted++; } }
-      return reply({ ok: true, deleted });
+      for (const id of ids) { if (await softDeletePost(id, user.id)) deleted++; }
+      return reply({ ok: true, deleted, recycleBinExpiresInSeconds: 1800 });
+    }
+    if (action === 'adminRestoreTrashedPost') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const id = clean(body.postId, 80);
+      let restored;
+      try { restored = await restoreTrashedPost(id); }
+      catch (error) { return reply({ error: error.message || 'The post could not be restored.' }, 409); }
+      if (!restored) return reply({ error: 'This recycle-bin entry has expired or no longer exists.' }, 410);
+      return reply({ ok: true });
+    }
+    if (action === 'adminPermanentlyDeleteTrashedPost') {
+      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      const id = clean(body.postId, 80), trash = await getJSON(`recycle-bin/posts/${id}`);
+      if (!trash) return reply({ error: 'Recycle-bin entry not found or already expired.' }, 404);
+      await DB.delete(`recycle-bin/posts/${id}`);
+      return reply({ ok: true });
     }
     if (action === 'adminBulkDeleteComments') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);

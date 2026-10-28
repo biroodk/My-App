@@ -70,6 +70,8 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
 .announcement-card p{font-size:15px;line-height:1.7}
 .reply-list{margin-top:13px;padding-left:12px;border-left:3px solid rgba(28,227,255,.36)}
 .comment-item{padding:13px;border-radius:12px;background:rgba(28,227,255,.065);border:1px solid rgba(28,227,255,.18)}
+.comment-head{display:flex;align-items:flex-start;gap:8px}.comment-avatar{width:25px;height:25px;flex:0 0 25px;object-fit:cover;border-radius:50%;border:1px solid rgba(28,227,255,.6);background:#071532}.comment-content{min-width:0;flex:1}.comment-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.comment-meta b{overflow-wrap:anywhere}
+.announcement-edit-form{display:grid;gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(28,227,255,.22)}.announcement-edit-form label{display:grid;gap:6px;color:#cce8ff;font-size:12px;font-weight:700}.announcement-edit-form input,.announcement-edit-form textarea{width:100%;min-width:0;padding:11px;border:1px solid rgba(28,227,255,.25);border-radius:10px;background:#020b20;color:#fff;font:inherit;font-size:14px}.announcement-edit-form textarea{resize:vertical;line-height:1.6}.recycle-item{border-color:rgba(255,170,90,.28);background:rgba(255,170,90,.025)}.recycle-expiry{color:#ffd98a;font-size:11px;margin:6px 0}
 .comment-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .comment-meta b{font-size:14px;overflow-wrap:anywhere}
 .comment-item>p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.7;color:#e2efff;margin:8px 0}
@@ -309,7 +311,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  }
  function renderAnnouncements(items=[]){
    const host=$('announcementList');
-   host.innerHTML=items.map(a=>`<article class="announcement-card"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><div class="post-date" style="margin-top:8px;text-align:right">Official • ${esc(a.authorName||'System')} • ${esc(when(a.createdAt))}${currentUser?.role==='admin'?` <button type="button" class="tiny-btn" data-delete-announcement="${esc(a.id)}">Delete</button>`:''}</div></article>`).join('');
+   host.innerHTML=items.map(a=>`<article class="announcement-card" data-announcement-card="${esc(a.id)}"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><div class="post-date" style="margin-top:8px;text-align:right">Official • ${esc(a.authorName||'System')} • ${esc(when(a.createdAt))}${currentUser?.role==='admin'?` <button type="button" class="tiny-btn" data-edit-announcement="${esc(a.id)}">Edit</button> <button type="button" class="tiny-btn danger" data-delete-announcement="${esc(a.id)}">Delete</button>`:''}</div>${currentUser?.role==='admin'?`<form class="announcement-edit-form" data-announcement-form="${esc(a.id)}" hidden><label>Title<input name="title" maxlength="100" required value="${esc(a.title)}"></label><label>Body<textarea name="text" maxlength="2000" rows="4" required>${esc(a.body)}</textarea></label><div class="form-foot"><button type="submit" class="install compact">Save changes</button><button type="button" class="tiny-btn" data-cancel-announcement="${esc(a.id)}">Cancel</button></div></form>`:''}</article>`).join('');
  }
  async function loadAdminDashboard(){
    if(currentUser?.role!=='admin')return;
@@ -319,8 +321,8 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
        fetch('/api/stats?admin=1',{headers:{Authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||'Could not load website statistics.');return x})
      ]);
      adminDashboardData={...d,siteStats};
-     const allStats={users:d.stats?.users||0,posts:d.stats?.posts||0,comments:d.stats?.comments||0,replies:d.stats?.replies||0,likes:d.stats?.likes||0,announcements:d.stats?.announcements||0,adminNotes:d.stats?.adminNotes||0,visits:siteStats.visits||0,completedDownloads:siteStats.completedDownloads||0};
-     $('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<button type="button" class="admin-stat" data-admin-detail="${esc(k)}"><b>${fmt(v)}</b><span>${esc(k==='adminNotes'?'Admin notes':k==='completedDownloads'?'Completed downloads':k)}</span></button>`).join('');
+     const allStats={users:d.stats?.users||0,posts:d.stats?.posts||0,comments:d.stats?.comments||0,replies:d.stats?.replies||0,likes:d.stats?.likes||0,announcements:d.stats?.announcements||0,adminNotes:d.stats?.adminNotes||0,recycleBin:d.stats?.recycleBin||0,visits:siteStats.visits||0,completedDownloads:siteStats.completedDownloads||0};
+     $('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<button type="button" class="admin-stat" data-admin-detail="${esc(k)}"><b>${fmt(v)}</b><span>${esc(k==='adminNotes'?'Admin notes':k==='recycleBin'?'Recycle bin':k==='completedDownloads'?'Completed downloads':k)}</span></button>`).join('');
      $('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<div class="admin-user"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · Joined ${esc(when(u.createdAt))} · ${fmt(u.postCount)} posts · ${fmt(u.commentCount)} comments · ${fmt(u.replyCount)} replies · ${fmt(u.likeCount)} likes</span></span></div>`).join('')||'<p class="muted-small">No users yet.</p>';
      renderAdminNotes(d.details?.notes||[]);
      updateChatUI(!!d.chatPaused);
@@ -333,13 +335,13 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  function renderAdminDetail(key){
    if(currentUser?.role!=='admin'||!adminDashboardData)return;
    const panel=$('adminDetailPanel'),host=$('adminDetailContent'),data=adminDashboardData.details||{};
-   const titleMap={users:'Registered users',posts:'All posts',comments:'All comments',replies:'All replies',likes:'Post likes',announcements:'Official announcements',adminNotes:'Private admin notes',visits:'Website visits',completedDownloads:'Completed APK downloads'};
+   const titleMap={users:'Registered users',posts:'All posts',comments:'All comments',replies:'All replies',likes:'Post likes',announcements:'Official announcements',adminNotes:'Private admin notes',recycleBin:'Recycle bin — 30-minute recovery',visits:'Website visits',completedDownloads:'Completed APK downloads'};
    $('adminDetailTitle').textContent=titleMap[key]||'Details';panel.hidden=false;
    if(key==='users'){
      host.innerHTML=(data.users||[]).map(u=>`<article class="admin-detail-item"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><img src="${esc(u.avatar||'/icon.png')}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--cyan)"><b>${esc(u.username)}</b> <span class="profile-badge">${esc(u.role)}</span></div><div>Joined: ${esc(when(u.createdAt))}</div><div>Posts: ${fmt(u.postCount)} · Comments: ${fmt(u.commentCount)} · Replies: ${fmt(u.replyCount)} · Likes: ${fmt(u.likeCount)}</div><div>Badge: ${esc(u.badge||'None')}</div>${u.avatar?`<a href="${esc(u.avatar)}" target="_blank" rel="noopener">View profile picture</a>`:''}</article>`).join('')||'<p>No registered users.</p>';
    }else if(key==='posts'){
      const items=data.posts||[];
-     host.innerHTML=`<div class="admin-bulk-toolbar"><label><input class="admin-select" type="checkbox" data-admin-select-all="posts"> Select all posts</label><button type="button" class="tiny-btn danger" data-admin-bulk-delete="posts">Delete selected posts</button><span class="muted-small">Choose posts to remove (max 100 per action).</span></div>`+(items.map(item=>`<article class="admin-detail-item admin-selectable"><input class="admin-select" type="checkbox" data-admin-select="posts" value="${esc(item.id)}" aria-label="Select post by ${esc(item.authorName)}"><div class="admin-detail-content"><b>${esc(item.authorName)}</b> · ${esc(item.authorRole)}<div>${esc(when(item.createdAt))}${item.updatedAt?' · edited':''}</div><p>${esc(item.text)}</p><div>${fmt(item.likeCount)} likes · ${fmt(item.commentCount)} comments</div><button class="tiny-btn" data-admin-open-post="${esc(item.id)}">Open post</button></div></article>`).join('')||'<p>No posts.</p>');
+     host.innerHTML=`<div class="admin-bulk-toolbar"><label><input class="admin-select" type="checkbox" data-admin-select-all="posts"> Select all posts</label><button type="button" class="tiny-btn danger" data-admin-bulk-delete="posts">Move selected to recycle bin</button><span class="muted-small">Posts can be restored for 30 minutes (max 100 per action).</span></div>`+(items.map(item=>`<article class="admin-detail-item admin-selectable"><input class="admin-select" type="checkbox" data-admin-select="posts" value="${esc(item.id)}" aria-label="Select post by ${esc(item.authorName)}"><div class="admin-detail-content"><b>${esc(item.authorName)}</b> · ${esc(item.authorRole)}<div>${esc(when(item.createdAt))}${item.updatedAt?' · edited':''}</div><p>${esc(item.text)}</p><div>${fmt(item.likeCount)} likes · ${fmt(item.commentCount)} comments</div><button class="tiny-btn" data-admin-open-post="${esc(item.id)}">Open post</button></div></article>`).join('')||'<p>No posts.</p>');
    }else if(key==='comments'){
      const items=data.comments||[];
      host.innerHTML=`<div class="admin-bulk-toolbar"><label><input class="admin-select" type="checkbox" data-admin-select-all="comments"> Select all comments</label><button type="button" class="tiny-btn danger" data-admin-bulk-delete="comments">Delete selected comments</button><span class="muted-small">Replies to selected comments are also removed (max 100 per action).</span></div>`+(items.map(item=>`<article class="admin-detail-item admin-selectable"><input class="admin-select" type="checkbox" data-admin-select="comments" value="${esc(item.id)}" aria-label="Select comment by ${esc(item.authorName)}"><div class="admin-detail-content"><b>${esc(item.authorName)}</b> · ${esc(when(item.createdAt))}<p>${esc(item.text)}</p><div class="muted-small">On post: ${esc(item.postText||'(post unavailable)')} · ${fmt(item.replyCount)} replies</div></div></article>`).join('')||'<p>No comments.</p>');
@@ -351,6 +353,9 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
      host.innerHTML=(data.announcements||[]).map(item=>`<article class="admin-detail-item"><b>${esc(item.title)}</b> · ${esc(item.authorName)} · ${esc(when(item.createdAt))}<p>${esc(item.body)}</p></article>`).join('')||'<p>No announcements.</p>';
    }else if(key==='adminNotes'){
      host.innerHTML=(data.notes||[]).map(item=>`<article class="admin-detail-item"><b>${esc(item.title)}</b> · ${esc(item.authorName)} · ${esc(when(item.updatedAt||item.createdAt))}<p>${esc(item.text)}</p><button class="tiny-btn" data-note-edit="${esc(item.id)}">Edit note</button> <button class="tiny-btn danger" data-note-delete="${esc(item.id)}">Delete note</button></article>`).join('')||'<p>No admin notes.</p>';
+   }else if(key==='recycleBin'){
+     const items=data.recycleBin||[];
+     host.innerHTML=(items.map(item=>`<article class="admin-detail-item recycle-item"><b>${esc(item.authorName||'Community member')} · deleted post</b><div>${esc(when(item.deletedAt))}</div><p>${esc(item.text||'(empty post)')}</p><div class="recycle-expiry">Recoverable until: ${esc(when(item.expiresAt))} · expired entries cannot be restored</div><div class="post-actions"><button type="button" data-trash-restore="${esc(item.id)}">Restore post</button><button type="button" class="danger" data-trash-purge="${esc(item.id)}">Delete permanently</button></div></article>`).join(''))||'<p>The recycle bin is empty. Deleted posts remain recoverable for 30 minutes.</p>';
    }else if(key==='visits'){
      host.innerHTML=`<article class="admin-detail-item"><b>Total counted visits: ${fmt(adminDashboardData.siteStats?.visits)}</b><p>The site currently records an aggregate visit count, not a visitor-by-visitor history. This is the full available detail.</p></article>`;
    }else if(key==='completedDownloads'){
@@ -368,7 +373,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
      const liked=currentUser&&(p.likes||[]).includes(currentUser.id);
      const canDiscuss=!!currentUser&&(!chatPaused||currentUser.role==='admin'||p.authorRole==='admin');
      const canLike=!!currentUser&&(!chatPaused||currentUser.role==='admin'||p.authorRole==='admin');
-     const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="comment-item"><div class="comment-meta"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</b><span class="post-date">${esc(when(c.createdAt))}</span></div><p>${esc(c.text)}</p>
+     const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="comment-item"><div class="comment-head"><img class="comment-avatar" src="${esc(c.authorAvatar||'/icon.png')}" alt="${esc(c.authorName)} profile picture"><div class="comment-content"><div class="comment-meta"><b style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</b><span class="post-date">${esc(when(c.createdAt))}</span></div><p>${esc(c.text)}</p></div></div>
        ${(canDiscuss&&selectedPostId===p.id)?`<form class="reply-form" data-reply="${esc(c.id)}" data-post="${esc(p.id)}"><input name="text" maxlength="500" required placeholder="Reply to ${esc(c.authorName)}…"><button type="submit">Reply</button></form>`:''}
        <div class="reply-list">${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item"><img class="reply-avatar" src="${esc(r.authorAvatar||'/icon.png')}" alt="${esc(r.authorName)} profile picture"><div class="reply-body"><div class="reply-name" style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'#75eaff'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</div><p>${esc(r.text)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div></div>`).join('')}</div>
      </div>`).join('');
@@ -417,17 +422,35 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    const edit=e.target.closest('[data-note-edit]'),delNote=e.target.closest('[data-note-delete]');
    if(edit){const note=adminDashboardData?.details?.notes?.find(n=>n.id===edit.dataset.noteEdit);if(!note)return;$('adminNoteId').value=note.id;$('adminNoteTitle').value=note.title;$('adminNoteText').value=note.text;$('saveAdminNoteButton').textContent='Save note changes';$('cancelAdminNoteEdit').hidden=false;$('adminNoteForm').scrollIntoView({behavior:'smooth',block:'start'});return}
    if(delNote){if(!await styledConfirm('Permanently delete this admin note?',{title:'Delete admin note',confirmText:'Delete note',danger:true}))return;try{await api('deleteAdminNote',{noteId:delNote.dataset.noteDelete});notice('Admin note deleted.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
+   const restore=e.target.closest('[data-trash-restore]'),purge=e.target.closest('[data-trash-purge]');
+   if(restore){if(!await styledConfirm('Restore this post and its comments, replies, and likes?'))return;try{await api('adminRestoreTrashedPost',{postId:restore.dataset.trashRestore});notice('Post restored successfully.','success');await loadAdminDashboard();renderAdminDetail('recycleBin');await load()}catch(err){notice(err.message,'error')}return}
+   if(purge){if(!await styledConfirm('Permanently delete this trashed post now? This cannot be undone.',{title:'Delete permanently',confirmText:'Delete permanently',danger:true}))return;try{await api('adminPermanentlyDeleteTrashedPost',{postId:purge.dataset.trashPurge});notice('Trashed post permanently deleted.','success');await loadAdminDashboard();renderAdminDetail('recycleBin')}catch(err){notice(err.message,'error')}return}
    const bulk=e.target.closest('[data-admin-bulk-delete]');
-   if(bulk){const type=bulk.dataset.adminBulkDelete,boxes=[...$('adminDetailContent').querySelectorAll(`[data-admin-select="${type}"]:checked`)],ids=boxes.map(box=>box.value);if(!ids.length){notice(`Select at least one ${type==='posts'?'post':'comment'}.`,'error');return}if(!await styledConfirm(`Permanently delete ${ids.length} selected ${type}? ${type==='posts'?'Their comments, replies, and likes will also be deleted.':'Replies to selected comments will also be deleted.'}`,{title:'Bulk delete',confirmText:`Delete ${ids.length}`,danger:true}))return;try{let deleted=0;for(let i=0;i<ids.length;i+=100){const batch=ids.slice(i,i+100);const result=await api(type==='posts'?'adminBulkDeletePosts':'adminBulkDeleteComments',type==='posts'?{postIds:batch}:{commentIds:batch});deleted+=Number(result.deleted||0)}notice(`Deleted ${deleted} ${type}.`,'success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
+   if(bulk){const type=bulk.dataset.adminBulkDelete,boxes=[...$('adminDetailContent').querySelectorAll(`[data-admin-select="${type}"]:checked`)],ids=boxes.map(box=>box.value);if(!ids.length){notice(`Select at least one ${type==='posts'?'post':'comment'}.`,'error');return}if(!await styledConfirm(`${type==='posts'?'Move':'Permanently delete'} ${ids.length} selected ${type}? ${type==='posts'?'They can be restored from the recycle bin for 30 minutes, including their comments, replies, and likes.':'Replies to selected comments will also be deleted.'}`,{title:type==='posts'?'Move to recycle bin':'Bulk delete',confirmText:type==='posts'?'Move to bin':`Delete ${ids.length}`,danger:true}))return;try{let deleted=0;for(let i=0;i<ids.length;i+=100){const batch=ids.slice(i,i+100);const result=await api(type==='posts'?'adminBulkDeletePosts':'adminBulkDeleteComments',type==='posts'?{postIds:batch}:{commentIds:batch});deleted+=Number(result.deleted||0)}notice(type==='posts'?`Moved ${deleted} posts to the recycle bin.`:`Deleted ${deleted} comments.`,'success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
    const b=e.target.closest('[data-admin-open-post]');if(!b)return;selectedPostId=b.dataset.adminOpenPost;currentPage=1;$('adminDashboard').hidden=true;const pos=(adminDashboardData?.details?.posts||[]).findIndex(item=>item.id===selectedPostId);if(pos>=0)currentPage=Math.floor(pos/20)+1;await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});
  });
  $('toggleChatMode').addEventListener('click',async()=>{if(currentUser?.role!=='admin')return;const pause=!chatPaused;if(!await styledConfirm(pause?'Pause community chat? Members will only be able to discuss administrator posts.':'Resume community chat for all members?',{title:'Change community chat mode',confirmText:pause?'Pause chat':'Resume chat',danger:pause}))return;try{await api('setChatMode',{paused:pause});notice(pause?'Community chat is paused.':'Community chat is open again.','success');await load()}catch(err){notice(err.message,'error')}});
- $('adminAccountForm').addEventListener('submit',async e=>{e.preventDefault();if(currentUser?.role!=='admin')return;const password=$('newAdminPassword').value,confirmPassword=$('newAdminConfirmPassword').value;if(password!==confirmPassword){notice('The new admin passwords do not match.','error');return}if(password.length<20||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password)){notice('Use at least 20 characters with uppercase, lowercase, a number, and a symbol.','error');return}if(!await styledConfirm('Create the administrator account SanShania? Store the new password safely; it cannot be shown again.',{title:'Create administrator',confirmText:'Create account'}))return;try{const d=await api('createAdminAccount',{username:'SanShania',password,confirmPassword});$('newAdminPassword').value='';$('newAdminConfirmPassword').value='';notice(d.message||'SanShania admin account created.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}});
+ let creatingAdminAccount=false;
+ $('adminAccountForm').addEventListener('submit',async e=>{e.preventDefault();if(currentUser?.role!=='admin'||creatingAdminAccount)return;const form=e.currentTarget,button=form.querySelector('button[type="submit"]'),password=$('newAdminPassword').value,confirmPassword=$('newAdminConfirmPassword').value;if(password!==confirmPassword){notice('The new admin passwords do not match.','error');return}if(password.length<20||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password)){notice('Use at least 20 characters with uppercase, lowercase, a number, and a symbol.','error');return}creatingAdminAccount=true;if(button){button.disabled=true;button.textContent='Confirming…'}if(!await styledConfirm('Create the administrator account SanShania? Store the new password safely; it cannot be shown again.',{title:'Create administrator',confirmText:'Create account'})){creatingAdminAccount=false;if(button){button.disabled=false;button.textContent='Create SanShania admin'}return}if(button)button.textContent='Creating…';try{const d=await api('createAdminAccount',{username:'SanShania',password,confirmPassword});$('newAdminPassword').value='';$('newAdminConfirmPassword').value='';notice(d.message||'SanShania admin account created.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}finally{creatingAdminAccount=false;if(button){button.disabled=false;button.textContent='Create SanShania admin'}}});
  $('adminNoteForm').addEventListener('submit',async e=>{e.preventDefault();if(currentUser?.role!=='admin')return;const noteId=$('adminNoteId').value,title=$('adminNoteTitle').value.trim(),text=$('adminNoteText').value.trim();if(!title||!text){notice('Enter both note title and text.','error');return}if(noteId&&!await styledConfirm('Save changes to this admin note?',{title:'Confirm note edit',confirmText:'Save changes'}))return;try{if(noteId)await api('editAdminNote',{noteId,title,text});else await api('createAdminNote',{title,text});$('adminNoteId').value='';$('adminNoteTitle').value='';$('adminNoteText').value='';$('saveAdminNoteButton').textContent='Save note';$('cancelAdminNoteEdit').hidden=true;notice(noteId?'Admin note updated.':'Admin note saved.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}});
  $('cancelAdminNoteEdit').addEventListener('click',()=>{$('adminNoteId').value='';$('adminNoteTitle').value='';$('adminNoteText').value='';$('saveAdminNoteButton').textContent='Save note';$('cancelAdminNoteEdit').hidden=true});
  $('adminNotesList').addEventListener('click',async e=>{const edit=e.target.closest('[data-note-edit]'),del=e.target.closest('[data-note-delete]');if(edit){const note=adminDashboardData?.details?.notes?.find(n=>n.id===edit.dataset.noteEdit);if(!note)return;$('adminNoteId').value=note.id;$('adminNoteTitle').value=note.title;$('adminNoteText').value=note.text;$('saveAdminNoteButton').textContent='Save note changes';$('cancelAdminNoteEdit').hidden=false;$('adminNoteForm').scrollIntoView({behavior:'smooth',block:'start'});return}if(del){if(!await styledConfirm('Permanently delete this admin note?',{title:'Delete admin note',confirmText:'Delete note',danger:true}))return;try{await api('deleteAdminNote',{noteId:del.dataset.noteDelete});notice('Admin note deleted.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}}});
  $('announcementForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('createAnnouncement',{title:$('announcementTitle').value.trim(),text:$('announcementBody').value.trim()});$('announcementTitle').value='';$('announcementBody').value='';notice('Official announcement published.','success');await load()}catch(err){notice(err.message,'error')}});
- $('announcementList').addEventListener('click',async e=>{const b=e.target.closest('[data-delete-announcement]');if(!b||currentUser?.role!=='admin')return;if(!await styledConfirm('Delete this official announcement?'))return;try{await api('deleteAnnouncement',{announcementId:b.dataset.deleteAnnouncement});await load()}catch(err){notice(err.message,'error')}});
+ $('announcementList').addEventListener('click',async e=>{
+   if(currentUser?.role!=='admin')return;
+   const edit=e.target.closest('[data-edit-announcement]'),cancel=e.target.closest('[data-cancel-announcement]'),del=e.target.closest('[data-delete-announcement]');
+   if(edit){const form=$('announcementList').querySelector(`[data-announcement-form="${CSS.escape(edit.dataset.editAnnouncement)}"]`);if(form)form.hidden=!form.hidden;return}
+   if(cancel){const form=cancel.closest('form');if(form)form.hidden=true;return}
+   if(del){if(!await styledConfirm('Delete this official announcement?',{title:'Delete announcement',confirmText:'Delete',danger:true}))return;try{await api('deleteAnnouncement',{announcementId:del.dataset.deleteAnnouncement});notice('Announcement deleted.','success');await load()}catch(err){notice(err.message,'error')}}
+ });
+ $('announcementList').addEventListener('submit',async e=>{
+   const form=e.target.closest('[data-announcement-form]');if(!form||currentUser?.role!=='admin')return;e.preventDefault();
+   const button=form.querySelector('button[type="submit"]');if(button?.disabled)return;
+   if(button)button.disabled=true;
+   try{await api('editAnnouncement',{announcementId:form.dataset.announcementForm,title:form.elements.title.value.trim(),text:form.elements.text.value.trim()});notice('Public announcement updated.','success');await load()}
+   catch(err){notice(err.message,'error')}
+   finally{if(button)button.disabled=false}
+ });
  $('logoutButton').addEventListener('click',async()=>{
    if(!await styledConfirm('Log out of the Folder Locker community?'))return;
    try{await api('logout')}catch(e){}
@@ -438,8 +461,10 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    try{await api('createPost',{text});$('postText').value='';currentPage=1;notice('Your post has been published.','success');await load()}
    catch(err){notice(err.message,'error')}
  });
+ let settingsSaving=false;
  $('settingsForm').addEventListener('submit',async e=>{
-   e.preventDefault();
+   e.preventDefault();if(settingsSaving)return;
+   const form=$('settingsForm'),saveButton=form.querySelector('button[type="submit"]');
    const username=$('settingsUsername').value.trim(),currentPassword=$('settingsCurrentPassword').value,password=$('settingsPassword').value,confirmPassword=$('settingsConfirmPassword').value,avatarFile=$('settingsAvatar').files[0];
    if(!username&&!password&&!currentPassword&&!confirmPassword&&!avatarFile){notice('Enter a new username, password, or profile picture first.');return}
    if(password||currentPassword||confirmPassword){
@@ -448,18 +473,32 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
      if(password.length<4||password.length>128){notice('The new password must be 4–128 characters.','error');return}
    }
    try{validateAvatarFile(avatarFile)}catch(err){notice(err.message,'error');return}
-   if(!await styledConfirm('Save these account changes?'))return;
+   settingsSaving=true;
+   if(saveButton){saveButton.disabled=true;saveButton.textContent='Confirming…'}
+   if(!await styledConfirm('Save these account changes?')){
+     settingsSaving=false;
+     if(saveButton){saveButton.disabled=false;saveButton.textContent='Save account settings'}
+     return;
+   }
+   if(saveButton)saveButton.textContent='Saving…';
+   const details=$('settingsDetails');details.open=false;details.hidden=true;$('openSettingsButton').hidden=false;
    try{
      let d={user:currentUser};
      if(username||password)d=await api('profile',{username,...(password?{currentPassword,password,confirmPassword}:{})});
      d=await api('updateAppearance',{displayNameColor:$('settingsNameColor').value,...(currentUser.role==='admin'?{badge:$('settingsBadge').value}:{})});
-     $('settingsCurrentPassword').value='';$('settingsPassword').value='';$('settingsConfirmPassword').value='';
-     if(avatarFile){
-       try{d={user:await uploadAvatar(avatarFile)}}
-       catch(err){$('settingsAvatar').value='';showApp(d.user);await load();notice('Account changes were saved, but the profile picture failed: '+err.message,'error');return}
-     }
-     $('settingsAvatar').value='';showApp(d.user);notice('Account settings saved. The settings panel will fade and close in 6 seconds.','success');fadeSettingsAfterSave();await load();
-   }catch(err){notice(err.message,'error')}
+     if(avatarFile)d={user:await uploadAvatar(avatarFile)};
+     // Reset every field only after the server has confirmed the changes.
+     $('settingsUsername').value='';$('settingsCurrentPassword').value='';$('settingsPassword').value='';$('settingsConfirmPassword').value='';$('settingsAvatar').value='';
+     $('settingsNameColor').value=d.user?.displayNameColor||'#e9faff';if(currentUser?.role==='admin')$('settingsBadge').value=d.user?.badge||'';
+     showApp(d.user);notice('Account settings saved successfully. The settings form has been closed and reset.','success');await load();
+   }catch(err){
+     const uncertain=err?.name==='TypeError'||/network|fetch|connection|timed out|failed to fetch/i.test(err?.message||'');
+     if(uncertain){$('settingsCurrentPassword').value='';$('settingsPassword').value='';$('settingsConfirmPassword').value='';notice('The network interrupted the response, so the save result is uncertain. Your change may already be saved. Try signing in with the new password before attempting another password change.','error')}
+     else notice(err.message,'error');
+     details.hidden=false;details.open=true;$('openSettingsButton').hidden=true;
+   }finally{
+     settingsSaving=false;if(saveButton){saveButton.disabled=false;saveButton.textContent='Save account settings'}
+   }
  });
  $('postsList').addEventListener('click',async e=>{
    const b=e.target.closest('button[data-action]');if(!b)return;
@@ -468,10 +507,10 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    if(action==='back-posts'){selectedPostId='';await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
    if(action==='cancel-edit'){const f=b.closest('.edit-form');f.hidden=true;return}
    if(action==='edit'){const f=$('postsList').querySelector(`form[data-edit="${CSS.escape(id)}"]`);if(f)f.hidden=false;return}
-   if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!await styledConfirm('Administrator: permanently delete this post and its comments?'))return;try{await api('adminDeletePost',{postId:id});notice('Post removed by administrator.','success');await load()}catch(err){notice(err.message,'error')}return}
+   if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!await styledConfirm('Move this post and its comments to the recycle bin? It can be restored for 30 minutes.',{title:'Move to recycle bin',confirmText:'Move to bin',danger:true}))return;try{await api('adminDeletePost',{postId:id});notice('Post moved to the recycle bin for 30 minutes.','success');await load();await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
    if(action==='delete'){
-     if(!await styledConfirm('Delete this post and all its comments? This cannot be undone.'))return;
-     try{await api('deletePost',{postId:id});notice('Post deleted.','success');await load()}catch(err){notice(err.message,'error')}return;
+     if(!await styledConfirm('Move this post and all its comments to the recycle bin? It can be restored for 30 minutes.',{title:'Move to recycle bin',confirmText:'Move to bin',danger:true}))return;
+     try{await api('deletePost',{postId:id});notice('Post moved to the recycle bin for 30 minutes.','success');await load()}catch(err){notice(err.message,'error')}return;
    }
    if(action==='like'){try{await api('likePost',{postId:id});await load()}catch(err){notice(err.message,'error')}}
  });
