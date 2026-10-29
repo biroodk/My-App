@@ -136,8 +136,8 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
   <a href="https://chat.whatsapp.com/GqKi4FjlWJf5zzCc2692v5?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" class="game-action" onclick="return openFolderLockerLink(event,this.href)" style="font-size: 12px">🤝 Join us on WhatsApp</a>
 </div>
 <a href="https://wa.me/256709387311?text=I%20would%20like%20to%20learn%20coding%20with%20you.%20Please" class="game-action game-action-left" onclick="return openFolderLockerLink(event,this.href)" style="font-size: 12px">👨‍💻 Learn Coding</a>
-<a href="https://folder-locker-my-first-app.vercel.app/" class="game-action game-action-right" onclick="return openFolderLockerLink(event,this.href)"
-style="font-size: 12px">🌐 Go Online</a>
+<a href="https://folder-locker-my-first-app.vercel.app/community.html" class="game-action game-action-right" onclick="return openFolderLockerLink(event,this.href)"
+style="font-size: 12px">💬 Comment Section</a>
 
   </main>
 
@@ -177,7 +177,7 @@ window.onExternalLinkResult=function(ok){
   document.getElementById('popup').classList.add('show');
 };
 
-function shareFolderLocker(event){if(event)event.preventDefault();if(FOLDER_LOCKER_INSTALL_URL.includes('YOUR-NETLIFY-SITE')){document.getElementById('pTitle').textContent='Install page not connected yet';document.getElementById('pMsg').textContent='This link is not yet connected to the to the Folder Locker install page.';document.getElementById('popup').classList.add('show');return;}const message='Install or update Folder Locker: '+FOLDER_LOCKER_INSTALL_URL;if(window.AndroidVault&&typeof AndroidVault.shareText==='function'){AndroidVault.shareText(message);return;}if(navigator.share){navigator.share({title:'Folder Locker',text:message,url:FOLDER_LOCKER_INSTALL_URL}).catch(()=>{});return;}if(navigator.clipboard){navigator.clipboard.writeText(message).then(()=>{document.getElementById('pTitle').textContent='Link copied';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')}).catch(()=>{document.getElementById('pTitle').textContent='Share Folder Locker';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')});}}
+function shareFolderLocker(event){if(event)event.preventDefault();if(FOLDER_LOCKER_INSTALL_URL.includes('YOUR-VERCEL-SITE')){document.getElementById('pTitle').textContent='Install page not connected yet';document.getElementById('pMsg').textContent='This link is not yet connected to the Folder Locker install page.';document.getElementById('popup').classList.add('show');return;}const message='Install or update Folder Locker: '+FOLDER_LOCKER_INSTALL_URL;if(window.AndroidVault&&typeof AndroidVault.shareText==='function'){AndroidVault.shareText(message);return;}if(navigator.share){navigator.share({title:'Folder Locker',text:message,url:FOLDER_LOCKER_INSTALL_URL}).catch(()=>{});return;}if(navigator.clipboard){navigator.clipboard.writeText(message).then(()=>{document.getElementById('pTitle').textContent='Link copied';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')}).catch(()=>{document.getElementById('pTitle').textContent='Share Folder Locker';document.getElementById('pMsg').textContent=message;document.getElementById('popup').classList.add('show')});}}
 
     /*Auto close alert box*/
 let premiumAlertTimer=null;
