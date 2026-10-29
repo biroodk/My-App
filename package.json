@@ -4,8 +4,5 @@
   "version": "2.0.0",
   "scripts": {
     "build": "node -e \"console.log('Folder Locker static install site is ready for Vercel build.')\""
-  },
-  "dependencies": {
-    "@netlify/blobs": "^10.5.0"
   }
 }

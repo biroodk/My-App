@@ -37,15 +37,15 @@ The existing Home and Games pages are retained. The supplied Files page architec
 - Welcome/onboarding screens replay from the first animation whenever the app launches. Existing users pass the first three animation screens, then continue directly to password login; only the first-time registration and vault-securing progress are skipped after a password is created.
 - All category pages use the same multi-select “Move selected files back to phone storage” flow as the main Files page. Vault copies are removed only after native export reports verified copies.
 - Community registration preserves the chosen Register tab while the initial API request finishes, preventing the initial online response from unexpectedly changing the form and dismissing the keyboard. Username/password fields also disable autocapitalization and autocorrect.
-- The original Netlify Functions remain as a legacy fallback only. The updated Community deployment uses the Vercel Node API routes plus Supabase Postgres/Storage; follow `SUPABASE-VERCEL-SETUP.md` for the active setup path.
+- The Community and install site use Vercel Node API routes plus Supabase Postgres/Storage. No Netlify runtime is required.
 - The install page counts a download only after it receives a complete APK response. A direct-download fallback is not counted when the browser prevents completion tracking; this is not an Android-installation counter.
 
-See `SUPABASE-VERCEL-SETUP.md` for current Community deployment steps. `INSTALL-PAGE-SETUP.md` documents the legacy Netlify deployment. These source changes do not become live until the website is deployed to Vercel and a new Android APK is built and tested.
+See `SUPABASE-VERCEL-SETUP.md` for deployment steps. These source changes do not become live until the website is deployed to Vercel and a new Android APK is built and tested.
 
 
 ## Updated Community deployment (Supabase + Vercel)
 
-See [`SUPABASE-VERCEL-SETUP.md`](SUPABASE-VERCEL-SETUP.md) for the database migration and deployment steps. The source now contains Vercel-compatible `/api/community` and `/api/stats` endpoints so the Community does not depend on Netlify Functions after deployment.
+See [`SUPABASE-VERCEL-SETUP.md`](SUPABASE-VERCEL-SETUP.md) for the database migration and deployment steps. The source contains Vercel-compatible `/api/community`, `/api/stats`, and `/api/download` endpoints backed by Supabase where persistence is required.
 
 ## Replacement sample video
 
@@ -63,7 +63,7 @@ Install an APK as an update over the existing app and do not uninstall the curre
 - The community feed previews up to three comments and one reply per comment. **Read more** opens one post with its full comment/reply thread; **Back to posts** returns to the feed.
 - Community post text and comment/reply text are larger for phone readability.
 - Server-side community sessions expire after two hours. Expired sessions are returned to the login form.
-- The app's Games-page online/share link now uses `https://folder-locker-my-first-app.vercel.app/`.
+- The Games-page action now opens the Comment Section at `https://folder-locker-my-first-app.vercel.app/community.html`.
 
 ## First system administrator account
 

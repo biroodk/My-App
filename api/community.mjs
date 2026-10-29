@@ -1,7 +1,7 @@
 import { createHash, randomBytes, pbkdf2Sync, timingSafeEqual } from 'node:crypto';
 import { createKV, createAvatarStore } from '../lib/supabase-kv.mjs';
 
-// Simple persistent key-value storage hosted with this Netlify site.
+// Persistent community storage backed by Supabase for the Vercel API route.
 const DB = createKV('folder-locker-community-v2');
 // Read-only fallback for notes created by the earlier community edition.
 const LEGACY_DB = createKV('folder-locker-community-v1');
