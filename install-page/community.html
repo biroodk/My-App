@@ -57,7 +57,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
 /* Full-width community layout, larger readable controls, admin tools and visual reply hierarchy. */
 body{background:#020a1e;display:block;padding:0;min-height:100vh}
 main.community-page{width:100%;max-width:none;margin:0;padding:0}
-.community{width:100%;max-width:none;margin:0;min-height:100vh;border-radius:0;border-left:0;border-right:0;padding:clamp(14px,3vw,28px);background:linear-gradient(150deg,rgba(15,140,255,.20),rgba(2,10,30,.98))}
+.community{width:100%;max-width:none;margin:0;min-height:100vh;border-radius:0;border-left:0;border-right:0;padding:clamp(14px,3vw,28px);background:#000045}
 .community-head h2{font-size:clamp(23px,4vw,30px)}
 .community-head p,.community-notice{font-size:15px;line-height:1.65}
 .community-form label{font-size:15px;line-height:1.45}
@@ -311,7 +311,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  }
  function renderAnnouncements(items=[]){
    const host=$('announcementList');
-   host.innerHTML=items.map(a=>`<article class="announcement-card" data-announcement-card="${esc(a.id)}"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><div class="post-date" style="margin-top:8px;text-align:right">Official • ${esc(a.authorName||'System')} • ${esc(when(a.createdAt))}${currentUser?.role==='admin'?` <button type="button" class="tiny-btn" data-edit-announcement="${esc(a.id)}">Edit</button> <button type="button" class="tiny-btn danger" data-delete-announcement="${esc(a.id)}">Delete</button>`:''}</div>${currentUser?.role==='admin'?`<form class="announcement-edit-form" data-announcement-form="${esc(a.id)}" hidden><label>Title<input name="title" maxlength="100" required value="${esc(a.title)}"></label><label>Body<textarea name="text" maxlength="2000" rows="4" required>${esc(a.body)}</textarea></label><div class="form-foot"><button type="submit" class="install compact">Save changes</button><button type="button" class="tiny-btn" data-cancel-announcement="${esc(a.id)}">Cancel</button></div></form>`:''}</article>`).join('');
+   host.innerHTML=items.map(a=>`<article class="announcement-card" data-announcement-card="${esc(a.id)}"><h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><div class="post-date" style="margin-top:8px;text-align:right">Official • ${esc(a.authorName||'System')} • ${esc(when(a.createdAt))}${currentUser?.role==='admin'?` <span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><button type="button" class="tiny-btn" data-edit-announcement="${esc(a.id)}">Edit</button><button type="button" class="tiny-btn danger" data-delete-announcement="${esc(a.id)}">Delete</button></span>`:''}</div>${currentUser?.role==='admin'?`<form class="announcement-edit-form" data-announcement-form="${esc(a.id)}" hidden><label>Title<input name="title" maxlength="100" required value="${esc(a.title)}"></label><label>Body<textarea name="text" maxlength="2000" rows="4" required>${esc(a.body)}</textarea></label><div class="form-foot"><button type="submit" class="install compact">Save changes</button><button type="button" class="tiny-btn" data-cancel-announcement="${esc(a.id)}">Cancel</button></div></form>`:''}</article>`).join('');
  }
  async function loadAdminDashboard(){
    if(currentUser?.role!=='admin')return;
