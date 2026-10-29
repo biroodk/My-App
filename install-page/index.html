@@ -166,7 +166,14 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
  $('openApkButton').addEventListener('click',()=>{
    $('downloadTitle').textContent='Find and install Folder Locker';
    $('downloadSpinner').style.display='none';
-   $('downloadDialogMessage').textContent='This page cannot launch Android’s installer directly. Open your browser’s Downloads list or your phone’s Files app, tap Folder-Locker.apk, then follow Android’s installation prompts. If asked, allow your browser to install unknown apps. Why? Because Folder Locker is not yet available on the Google Play Store.';
+   $('downloadDialogMessage').textContent =
+     'This page cannot launch Android’s installer directly. ' +
+     'Open your browser’s Downloads list or your phone’s Files app, ' +
+     'tap Folder-Locker.apk, then follow Android’s installation prompts. ' +
+     'If asked, allow your browser to install unknown apps.\n\n' +
+     'Why? Because Folder Locker is not yet available on the Google Play Store.\n' +
+     'Why? Because it is still under construction.\n' +
+     'Why? Because many features are not yet upgraded but are coming soon.';
    $('installNext').style.display='block';
    $('showInstallSteps').textContent='Hide installation steps';
  });
