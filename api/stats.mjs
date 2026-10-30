@@ -17,6 +17,27 @@ async function completedCount() {
   const results = await stats.list({ prefix: 'completed-downloads/' });
   return results.blobs?.length || 0;
 }
+async function completedDownloadRecords(limit = 300) {
+  const results = await stats.list({ prefix: 'completed-downloads/' });
+  const keys = (results.blobs || []).map(item => item.key).sort().reverse().slice(0, limit);
+  const values = typeof stats.getMany === 'function'
+    ? await stats.getMany(keys)
+    : await Promise.all(keys.map(key => stats.get(key)));
+  return keys.map((key, index) => {
+    const value = values[index];
+    if (value && typeof value === 'object' && !Array.isArray(value)) return { id: key, ...value };
+    const suffix = key.slice('completed-downloads/'.length);
+    const timestamp = Number(suffix.split('-')[0]);
+    return {
+      id: key,
+      downloadedAt: Number.isFinite(timestamp) && timestamp > 0 ? new Date(timestamp).toISOString() : '',
+      countryCode: '', region: '', city: '', district: '', locality: '',
+      device: { model: 'Not recorded (older download)', platform: 'Unknown', browser: 'Unknown' },
+      locationConsent: false, latitude: null, longitude: null, accuracyMeters: null,
+      legacyRecord: true
+    };
+  });
+}
 async function isAdmin(request) {
   const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
   if (!token || token.length > 200) return false;
@@ -38,7 +59,8 @@ async function statsHandler(request) {
     if (url.searchParams.get('admin') === '1') {
       if (!(await isAdmin(request))) return json({ error: 'Administrator permission required.' }, 403);
       const totals = await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 };
-      return json({ visits: Number(totals.visits || 0), completedDownloads: await completedCount() });
+      const [completedDownloads, downloadRecords] = await Promise.all([completedCount(), completedDownloadRecords(300)]);
+      return json({ visits: Number(totals.visits || 0), completedDownloads, downloadRecords, downloadRecordsLimit: 300 });
     }
     const visitorId = (url.searchParams.get('visitorId') || '').slice(0, 120);
     let counted = false;

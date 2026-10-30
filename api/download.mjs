@@ -7,9 +7,52 @@ const APK_URL = 'https://github.com/biroodk/My-App/releases/latest/download/Fold
 const stats = createKV('folder-locker-public-stats');
 const MIN_APK_BYTES = 100 * 1024;
 
-async function recordCompletedDownload() {
-  const key = `completed-downloads/${Date.now()}-${randomBytes(12).toString('hex')}`;
-  await stats.set(key, '1', { onlyIfNew: true });
+function headerValue(req, name, max = 180) {
+  const value = req.headers?.[name.toLowerCase()];
+  const raw = Array.isArray(value) ? value[0] : value;
+  return String(raw || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max);
+}
+function decodedHeader(req, name, max = 120) {
+  const raw = headerValue(req, name, max * 3);
+  try { return decodeURIComponent(raw).trim().slice(0, max); } catch { return raw.slice(0, max); }
+}
+function validCoordinate(value, min, max) {
+  if (value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= min && number <= max ? number : null;
+}
+function deviceDetails(req) {
+  let details = {};
+  try { details = JSON.parse(decodeURIComponent(headerValue(req, 'x-folder-locker-device', 1200) || '%7B%7D')); } catch {}
+  const userAgent = headerValue(req, 'user-agent', 500);
+  const androidModel = userAgent.match(/Android\s[^;]+;\s*([^;)]+)/i)?.[1]?.replace(/\sBuild\/.*/, '').trim();
+  const model = String(details.model || headerValue(req, 'sec-ch-ua-model', 100).replace(/^"|"$/g, '') || androidModel || '').slice(0, 100);
+  const platform = String(details.platform || (/Android/i.test(userAgent) ? 'Android' : /iPhone|iPad/i.test(userAgent) ? 'iOS' : /Windows/i.test(userAgent) ? 'Windows' : /Macintosh/i.test(userAgent) ? 'macOS' : /Linux/i.test(userAgent) ? 'Linux' : 'Unknown')).slice(0, 40);
+  const browser = String(details.browser || (/(Edg|EdgiOS)\//i.test(userAgent) ? 'Edge' : /Firefox\//i.test(userAgent) ? 'Firefox' : /Chrome\//i.test(userAgent) ? 'Chrome' : /Safari\//i.test(userAgent) ? 'Safari' : 'Other browser')).slice(0, 40);
+  return { model: model || (platform === 'Android' ? 'Android device (model unavailable)' : `${platform} device`), platform, browser };
+}
+async function recordCompletedDownload(req) {
+  const now = Date.now();
+  const consent = headerValue(req, 'x-folder-locker-location-consent', 8) === 'true';
+  const latitude = consent ? validCoordinate(headerValue(req, 'x-folder-locker-latitude', 30), -90, 90) : null;
+  const longitude = consent ? validCoordinate(headerValue(req, 'x-folder-locker-longitude', 30), -180, 180) : null;
+  const accuracy = consent ? validCoordinate(headerValue(req, 'x-folder-locker-accuracy', 30), 0, 100000) : null;
+  const city = decodedHeader(req, 'x-vercel-ip-city', 100);
+  const record = {
+    downloadedAt: new Date(now).toISOString(),
+    countryCode: headerValue(req, 'x-vercel-ip-country', 2).toUpperCase(),
+    region: decodedHeader(req, 'x-vercel-ip-country-region', 100),
+    city,
+    district: consent ? decodedHeader(req, 'x-folder-locker-district', 100) : '',
+    locality: consent ? decodedHeader(req, 'x-folder-locker-locality', 100) : '',
+    device: deviceDetails(req),
+    locationConsent: consent,
+    latitude,
+    longitude,
+    accuracyMeters: accuracy
+  };
+  const key = `completed-downloads/${now}-${randomBytes(12).toString('hex')}`;
+  await stats.setJSON(key, record, { onlyIfNew: true });
 }
 
 export default async function downloadHandler(req, res) {
@@ -83,7 +126,7 @@ export default async function downloadHandler(req, res) {
 
     // Do not count aborted, short, or otherwise incomplete transfers.
     if (totalBytes < MIN_APK_BYTES || (expectedLength > 0 && totalBytes !== expectedLength)) return;
-    await recordCompletedDownload();
+    await recordCompletedDownload(req);
   } catch (error) {
     if (res.headersSent) {
       if (!res.writableFinished) res.destroy(error instanceof Error ? error : undefined);

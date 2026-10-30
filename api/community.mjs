@@ -178,7 +178,7 @@ async function adminDashboard() {
       commentCount: comments.filter(comment => comment.postId === post.id).length
     })),
     comments: comments.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(comment => ({
-      id: comment.id, postId: comment.postId, postText: (postMap.get(comment.postId)?.text || '').slice(0,160),
+      id: comment.id, postId: comment.postId, authorId: comment.authorId, postText: (postMap.get(comment.postId)?.text || '').slice(0,160),
       authorName: userMap.get(comment.authorId)?.username || 'Community member', text: comment.text, createdAt: comment.createdAt,
       replyCount: replies.filter(reply => reply.commentId === comment.id).length
     })),

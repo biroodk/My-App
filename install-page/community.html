@@ -109,6 +109,29 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
 @media(min-width:760px){.admin-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.community{padding:26px 4vw}.reply-list{padding-left:18px}}
 @media(max-width:480px){.community-head{flex-direction:column}.community-live{align-self:flex-start}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.community-user{flex-wrap:wrap}.community-user-text{min-width:130px}}
 
+
+/* Clearly framed community board and glowing public announcement boxes. */
+.community{width:calc(100% - 24px);max-width:1280px;margin:12px auto!important;border:2px solid rgba(28,227,255,.78)!important;border-radius:26px!important;box-shadow:0 0 10px rgba(28,227,255,.28),0 0 30px rgba(28,227,255,.16),inset 0 0 22px rgba(28,227,255,.055)!important;background:linear-gradient(150deg,#000052 0%,#020a2f 55%,#000045 100%)!important;}
+.announcement-list{padding:13px;border:1px solid rgba(28,227,255,.5);border-radius:18px;background:rgba(2,10,30,.58);box-shadow:0 0 22px rgba(28,227,255,.17),inset 0 0 18px rgba(28,227,255,.045);}
+.announcement-card{border:1px solid rgba(28,227,255,.82);background:linear-gradient(145deg,rgba(28,227,255,.18),rgba(15,140,255,.12),rgba(2,10,30,.68));box-shadow:0 0 10px rgba(28,227,255,.25),0 0 24px rgba(28,227,255,.16),inset 0 0 18px rgba(28,227,255,.07);}
+.admin-user{width:100%;border:1px solid rgba(28,227,255,.2);color:#e9faff;text-align:left;cursor:pointer;font:inherit;}
+.admin-user:focus-visible,.admin-user:hover{outline:2px solid rgba(28,227,255,.65);background:rgba(28,227,255,.1);}
+.admin-user-open{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid rgba(28,227,255,.34);border-radius:12px;background:rgba(28,227,255,.055);color:#e9faff;text-align:left;font:inherit;cursor:pointer;}
+.admin-user-open:hover,.admin-user-open:focus-visible{outline:2px solid rgba(28,227,255,.65);box-shadow:0 0 14px rgba(28,227,255,.13);}
+.admin-user-open img{width:48px;height:48px;flex:0 0 48px;object-fit:cover;border-radius:50%;border:1px solid var(--cyan);}
+.admin-user-profile-head{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid rgba(28,227,255,.4);border-radius:15px;background:rgba(28,227,255,.06);box-shadow:0 0 18px rgba(28,227,255,.1);}
+.admin-user-profile-head img{width:76px;height:76px;object-fit:cover;border-radius:50%;border:2px solid var(--cyan);box-shadow:0 0 16px rgba(28,227,255,.2);}
+.admin-user-profile-head a,.admin-detail-item a{color:var(--cyan);font-weight:800;text-decoration:underline;}
+.admin-user-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.admin-user-tabs button{border:1px solid rgba(28,227,255,.35);border-radius:10px;padding:9px 12px;background:rgba(28,227,255,.06);color:#dff8ff;font:700 13px system-ui;cursor:pointer;}
+.admin-user-tabs button.active{background:linear-gradient(100deg,var(--cyan),var(--blue));color:#001323;border-color:transparent;}
+.admin-user-result{padding:12px;margin:9px 0;border:1px solid rgba(28,227,255,.2);border-radius:12px;background:rgba(0,0,0,.18);overflow-wrap:anywhere;}
+.admin-user-result p{white-space:pre-wrap;overflow-wrap:anywhere;color:#d7e8ff;line-height:1.6;margin:7px 0;}
+.download-record{padding:13px;margin:10px 0;border:1px solid rgba(28,227,255,.3);border-radius:13px;background:rgba(28,227,255,.045);box-shadow:0 0 13px rgba(28,227,255,.07);}
+.download-record h5{font-size:15px;color:var(--cyan);margin:0 0 7px;}
+.download-record p{margin:5px 0;overflow-wrap:anywhere;}
+.download-record a{color:var(--cyan);font-weight:800;}
+@media(max-width:600px){.community{width:calc(100% - 14px);margin:7px auto!important;border-radius:19px!important;padding:14px!important}.announcement-list{padding:9px}.admin-user-profile-head img{width:62px;height:62px;}}
 </style>
 </head>
 <body>
@@ -323,7 +346,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
      adminDashboardData={...d,siteStats};
      const allStats={users:d.stats?.users||0,posts:d.stats?.posts||0,comments:d.stats?.comments||0,replies:d.stats?.replies||0,likes:d.stats?.likes||0,announcements:d.stats?.announcements||0,adminNotes:d.stats?.adminNotes||0,recycleBin:d.stats?.recycleBin||0,visits:siteStats.visits||0,completedDownloads:siteStats.completedDownloads||0};
      $('adminStats').innerHTML=Object.entries(allStats).map(([k,v])=>`<button type="button" class="admin-stat" data-admin-detail="${esc(k)}"><b>${fmt(v)}</b><span>${esc(k==='adminNotes'?'Admin notes':k==='recycleBin'?'Recycle bin':k==='completedDownloads'?'Completed downloads':k)}</span></button>`).join('');
-     $('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<div class="admin-user"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · Joined ${esc(when(u.createdAt))} · ${fmt(u.postCount)} posts · ${fmt(u.commentCount)} comments · ${fmt(u.replyCount)} replies · ${fmt(u.likeCount)} likes</span></span></div>`).join('')||'<p class="muted-small">No users yet.</p>';
+     $('adminUsers').innerHTML=(d.recentUsers||[]).map(u=>`<button type="button" class="admin-user" data-admin-user-open="${esc(u.id)}"><img src="${esc(u.avatar||'/icon.png')}" alt=""><span style="color:${/^#[0-9a-fA-F]{6}$/.test(u.displayNameColor||'')?u.displayNameColor:'#e9faff'}"><b>${esc(u.username)}</b>${u.badge?` · ${esc(u.badge)}`:''}<br><span class="muted-small">${esc(u.role)} · Joined ${esc(when(u.createdAt))} · ${fmt(u.postCount)} posts · ${fmt(u.commentCount)} comments · ${fmt(u.replyCount)} replies · ${fmt(u.likeCount)} likes</span><br><span class="muted-small">Tap to view profile and activity →</span></span></button>`).join('')||'<p class="muted-small">No users yet.</p>';
      renderAdminNotes(d.details?.notes||[]);
      updateChatUI(!!d.chatPaused);
    }catch(e){notice(e.message,'error')}
@@ -338,7 +361,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    const titleMap={users:'Registered users',posts:'All posts',comments:'All comments',replies:'All replies',likes:'Post likes',announcements:'Official announcements',adminNotes:'Private admin notes',recycleBin:'Recycle bin — 30-minute recovery',visits:'Website visits',completedDownloads:'Completed APK downloads'};
    $('adminDetailTitle').textContent=titleMap[key]||'Details';panel.hidden=false;
    if(key==='users'){
-     host.innerHTML=(data.users||[]).map(u=>`<article class="admin-detail-item"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><img src="${esc(u.avatar||'/icon.png')}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--cyan)"><b>${esc(u.username)}</b> <span class="profile-badge">${esc(u.role)}</span></div><div>Joined: ${esc(when(u.createdAt))}</div><div>Posts: ${fmt(u.postCount)} · Comments: ${fmt(u.commentCount)} · Replies: ${fmt(u.replyCount)} · Likes: ${fmt(u.likeCount)}</div><div>Badge: ${esc(u.badge||'None')}</div>${u.avatar?`<a href="${esc(u.avatar)}" target="_blank" rel="noopener">View profile picture</a>`:''}</article>`).join('')||'<p>No registered users.</p>';
+     host.innerHTML=(data.users||[]).map(u=>`<button type="button" class="admin-user-open" data-admin-user-open="${esc(u.id)}"><img src="${esc(u.avatar||'/icon.png')}" alt="${esc(u.username)} profile picture"><span style="min-width:0"><b>${esc(u.username)}</b> <span class="profile-badge">${esc(u.role)}</span><br><span class="muted-small">Joined ${esc(when(u.createdAt))} · ${fmt(u.postCount)} posts · ${fmt(u.commentCount)} comments · ${fmt(u.replyCount)} replies · ${fmt(u.likeCount)} likes</span><br><span class="muted-small">Open profile, posts and commented-on posts →</span></span></button>`).join('')||'<p>No registered users.</p>';
    }else if(key==='posts'){
      const items=data.posts||[];
      host.innerHTML=`<div class="admin-bulk-toolbar"><label><input class="admin-select" type="checkbox" data-admin-select-all="posts"> Select all posts</label><button type="button" class="tiny-btn danger" data-admin-bulk-delete="posts">Move selected to recycle bin</button><span class="muted-small">Posts can be restored for 30 minutes (max 100 per action).</span></div>`+(items.map(item=>`<article class="admin-detail-item admin-selectable"><input class="admin-select" type="checkbox" data-admin-select="posts" value="${esc(item.id)}" aria-label="Select post by ${esc(item.authorName)}"><div class="admin-detail-content"><b>${esc(item.authorName)}</b> · ${esc(item.authorRole)}<div>${esc(when(item.createdAt))}${item.updatedAt?' · edited':''}</div><p>${esc(item.text)}</p><div>${fmt(item.likeCount)} likes · ${fmt(item.commentCount)} comments</div><button class="tiny-btn" data-admin-open-post="${esc(item.id)}">Open post</button></div></article>`).join('')||'<p>No posts.</p>');
@@ -359,9 +382,38 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    }else if(key==='visits'){
      host.innerHTML=`<article class="admin-detail-item"><b>Total counted visits: ${fmt(adminDashboardData.siteStats?.visits)}</b><p>The site currently records an aggregate visit count, not a visitor-by-visitor history. This is the full available detail.</p></article>`;
    }else if(key==='completedDownloads'){
-     host.innerHTML=`<article class="admin-detail-item"><b>Completed APK downloads: ${fmt(adminDashboardData.siteStats?.completedDownloads)}</b><p>The site currently records an aggregate count of completed downloads, not a file-by-file download log. This is the full available detail.</p></article>`;
+     const records=adminDashboardData.siteStats?.downloadRecords||[];
+     const countryName=code=>{if(!code)return 'Country unavailable';try{return new Intl.DisplayNames(['en'],{type:'region'}).of(code)||code}catch{return code}};
+     const flag=code=>/^[A-Z]{2}$/.test(code||'')?String.fromCodePoint(...code.toUpperCase().split('').map(ch=>127462+ch.charCodeAt(0)-65)):'🌍';
+     const recordLocation=item=>[item.city,item.region].filter((v,i,a)=>v&&a.indexOf(v)===i).join(', ');
+     host.innerHTML=`<article class="admin-detail-item"><b>Completed APK downloads: ${fmt(adminDashboardData.siteStats?.completedDownloads)}</b><p>Showing up to ${fmt(adminDashboardData.siteStats?.downloadRecordsLimit||300)} most recent completed transfers. GPS coordinates are present only when the downloader opted in and granted browser permission. IP addresses are not stored.</p></article>`+
+       (records.map(item=>{const code=String(item.countryCode||'').toUpperCase();const place=recordLocation(item);const coords=Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&item.latitude!==null&&item.longitude!==null;const device=item.device||{};return `<article class="download-record"><h5>${flag(code)} ${esc(countryName(code))}${code?` (${esc(code)})`:''}</h5><p><b>Device:</b> ${esc(device.model||'Not recorded')} · ${esc(device.platform||'Unknown')} · ${esc(device.browser||'Unknown')}</p><p><b>Network area:</b> ${esc(place||'Not available')}</p>${item.locationConsent?`<p><b>Downloader-shared district / area:</b> ${esc([item.district,item.locality].filter(Boolean).join(', ')||'No district or area entered')}</p>`:''}${coords?`<p><b>GPS coordinates:</b> ${Number(item.latitude).toFixed(6)}, ${Number(item.longitude).toFixed(6)}${Number.isFinite(Number(item.accuracyMeters))&&item.accuracyMeters!==null?` · accuracy about ${Math.round(Number(item.accuracyMeters))} m`:''} · <a href="https://www.google.com/maps?q=${Number(item.latitude)},${Number(item.longitude)}" target="_blank" rel="noopener noreferrer">Open exact map location</a></p>`:''}<p><b>Date and time:</b> ${esc(item.downloadedAt?when(item.downloadedAt):'Not recorded')}${item.legacyRecord?' · older record, location/device details were not collected':''}</p></article>`}).join('')||'<p class="muted-small">No completed APK downloads have been recorded yet.</p>');
    }
    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+ }
+
+ function renderAdminUserProfile(userId,mode='posts'){
+   if(currentUser?.role!=='admin'||!adminDashboardData)return;
+   const data=adminDashboardData.details||{};
+   const user=(data.users||[]).find(item=>item.id===userId);
+   if(!user)return;
+   const posts=data.posts||[],comments=data.comments||[];
+   const ownPosts=posts.filter(item=>item.authorId===user.id);
+   const ownComments=comments.filter(item=>item.authorId===user.id).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+   $('adminDetailTitle').textContent=`${user.username} — profile`;
+   $('adminDetailPanel').hidden=false;
+   const avatar=user.avatar||'/icon.png';
+   let activity='';
+   if(mode==='commented'){
+     const byPost=new Map();
+     for(const comment of ownComments){if(!byPost.has(comment.postId))byPost.set(comment.postId,[]);byPost.get(comment.postId).push(comment)}
+     const postMap=new Map(posts.map(post=>[post.id,post]));
+     activity=[...byPost.entries()].map(([postId,items])=>{const post=postMap.get(postId);return `<article class="admin-user-result"><b>Post by ${esc(post?.authorName||'Community member')}</b><div class="post-date">${esc(post?when(post.createdAt):'Original post unavailable')} · ${fmt(items.length)} comment${items.length===1?'':'s'} by this user</div><p><b>Original post:</b> ${esc(post?.text||items[0]?.postText||'(post unavailable)')}</p>${items.map(comment=>`<p><b>${esc(user.username)} commented:</b> ${esc(comment.text)} <span class="post-date">· ${esc(when(comment.createdAt))}</span></p>`).join('')}<button type="button" class="tiny-btn" data-admin-open-post="${esc(postId)}" ${post?'':'disabled'}>Open this post</button></article>`}).join('')||'<p class="muted-small">This user has not commented on any available posts.</p>';
+   }else{
+     activity=ownPosts.map(post=>`<article class="admin-user-result"><b>Post by ${esc(user.username)}</b><div class="post-date">${esc(when(post.createdAt))}${post.updatedAt?' · edited':''}</div><p>${esc(post.text)}</p><div class="muted-small">${fmt(post.likeCount)} likes · ${fmt(post.commentCount)} comments</div><button type="button" class="tiny-btn" data-admin-open-post="${esc(post.id)}">Open this post</button></article>`).join('')||'<p class="muted-small">This user has not published any posts.</p>';
+   }
+   $('adminDetailContent').innerHTML=`<button type="button" class="tiny-btn" data-admin-users-back="1" data-user-id="${esc(user.id)}">← Back to registered users</button><div class="admin-user-profile-head"><img src="${esc(avatar)}" alt="${esc(user.username)} profile picture"><div><h4 style="margin:0 0 5px;color:#e9faff">${esc(user.username)}</h4><div class="muted-small">${esc(user.role)} · Joined ${esc(when(user.createdAt))}</div><div class="muted-small">${fmt(user.postCount)} posts · ${fmt(user.commentCount)} comments · ${fmt(user.replyCount)} replies · ${fmt(user.likeCount)} likes</div>${user.avatar?`<a href="${esc(user.avatar)}" target="_blank" rel="noopener noreferrer">View profile picture</a>`:''}</div></div><div class="admin-user-tabs"><button type="button" data-admin-user-tab="posts" class="${mode==='posts'?'active':''}">Posts by this user (${fmt(ownPosts.length)})</button><button type="button" data-admin-user-tab="commented" class="${mode==='commented'?'active':''}">Posts commented on (${fmt(new Set(ownComments.map(item=>item.postId)).size)})</button></div>${activity}`;
+   $('adminDetailPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
  }
 
  function renderPosts(posts){
@@ -417,8 +469,12 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  $('closeAdminDashboard').addEventListener('click',()=>{$('adminDashboard').hidden=true;$('adminDetailPanel').hidden=true;$('openAdminDashboard').scrollIntoView({behavior:'smooth',block:'center'});});
  $('closeAdminDetails').addEventListener('click',()=>{$('adminDetailPanel').hidden=true});
  $('adminStats').addEventListener('click',e=>{const b=e.target.closest('[data-admin-detail]');if(b)renderAdminDetail(b.dataset.adminDetail)});
+ $('adminUsers').addEventListener('click',e=>{const b=e.target.closest('[data-admin-user-open]');if(b)renderAdminUserProfile(b.dataset.adminUserOpen)});
  $('adminDetailContent').addEventListener('change',e=>{const all=e.target.closest('[data-admin-select-all]');if(all){$('adminDetailContent').querySelectorAll(`[data-admin-select="${all.dataset.adminSelectAll}"]`).forEach(box=>box.checked=all.checked)}});
  $('adminDetailContent').addEventListener('click',async e=>{
+   const userOpen=e.target.closest('[data-admin-user-open]');if(userOpen){renderAdminUserProfile(userOpen.dataset.adminUserOpen);return}
+   const userTab=e.target.closest('[data-admin-user-tab]');if(userTab){const target=adminDashboardData?.details?.users?.find(item=>item.id===userTab.closest('#adminDetailContent').querySelector('[data-admin-users-back]')?.dataset.userId);if(target)renderAdminUserProfile(target.id,userTab.dataset.adminUserTab);return}
+   const userBack=e.target.closest('[data-admin-users-back]');if(userBack){renderAdminDetail('users');return}
    const edit=e.target.closest('[data-note-edit]'),delNote=e.target.closest('[data-note-delete]');
    if(edit){const note=adminDashboardData?.details?.notes?.find(n=>n.id===edit.dataset.noteEdit);if(!note)return;$('adminNoteId').value=note.id;$('adminNoteTitle').value=note.title;$('adminNoteText').value=note.text;$('saveAdminNoteButton').textContent='Save note changes';$('cancelAdminNoteEdit').hidden=false;$('adminNoteForm').scrollIntoView({behavior:'smooth',block:'start'});return}
    if(delNote){if(!await styledConfirm('Permanently delete this admin note?',{title:'Delete admin note',confirmText:'Delete note',danger:true}))return;try{await api('deleteAdminNote',{noteId:delNote.dataset.noteDelete});notice('Admin note deleted.','success');await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
