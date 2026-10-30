@@ -58,9 +58,19 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
    <div class="download-progress-meta"><span id="downloadProgressText">0.00 MB / —</span><span id="downloadProgressPercent">0%</span></div>
   </div>
   <div class="install-next" id="installNext">
-   <b style="color:var(--cyan)">When the download finishes</b>
-   <ol><li>Open your browser's Downloads list or your phone's Files app.</li><li>Tap <b>Folder-Locker.apk</b> (or the downloaded APK filename).</li><li>If prompted, allow this browser to install unknown apps. <span style="display:block;margin-top:4px">Why? Because Folder Locker is not yet available on the Google Play Store.</span> Then return to the installer and tap <b>Install</b> or <b>Update</b>.</li><li>Wait for Android to finish, then tap <b>Done</b> or <b>Open</b>.</li></ol>
-  </div>
+    <b style="color:var(--cyan)">When the download finishes</b>
+    <ol>
+     <li>When the download finishes, tap <b>Open</b> in the notification at the top of your screen, or open your phone's <b>Downloads</b> folder.</li>
+     <li>Tap <b>Folder-Locker.apk</b> to open Android's installer.</li>
+     <li>If prompted, allow this browser to install unknown apps.
+      <span style="display:block;margin-top:4px">Why? Because Folder Locker is not yet available on the Google Play Store.<br>
+      Why? Because it is still under construction.<br>
+      Why? Because many features are not yet upgraded but are coming soon.</span>
+      Then follow Android's prompts to tap <b>Install</b> or <b>Update</b>.
+     </li>
+     <li>Wait for Android to finish, then tap <b>Done</b> or <b>Open</b>.</li>
+    </ol>
+   </div>
   <p class="download-note">The counter records when this page successfully receives the entire APK response. The page cannot confirm that Android installed it or that a separate browser saved the file to disk.</p>
   <div class="dialog-actions">
    <button class="secondary cancel-download" id="cancelDownloadButton" type="button" hidden>Cancel download</button>
@@ -153,7 +163,7 @@ main{width:min(100%,520px)}.frame{border:1px solid rgba(28,227,255,.55);border-r
        $('downloadProgressPercent').textContent='Cancelled';setStatus('APK download cancelled. You can safely try again.',true);
      }else{
        $('downloadTitle').textContent='Download failed';$('downloadDialogMessage').textContent=(error&&error.message?error.message:'The APK download failed.')+' You can retry, or use the official GitHub release link if the Vercel download service is unavailable.';
-       setStatus('The tracked download failed. You can retry or open the official GitHub release.',true);
+       setStatus(`The download failed. You can retry or check your phone's Downloads folder for a partially downloaded file.`,true);
        const fallback=document.createElement('a');fallback.href=currentDownloadUrl||APK;fallback.textContent='Open official GitHub APK release';fallback.className='secondary';fallback.target='_blank';fallback.rel='noopener';fallback.style.marginTop='10px';fallback.id='githubFallbackLink';
        const existing=$('githubFallbackLink');if(existing)existing.remove();$('downloadDialogMessage').appendChild(document.createTextNode(' '));$('downloadDialogMessage').insertAdjacentText('beforeend',' ');$('downloadDialogMessage').appendChild(fallback);
      }
