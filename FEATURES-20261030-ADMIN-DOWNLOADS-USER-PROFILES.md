@@ -1,6 +1,6 @@
 # Folder Locker — Admin download records and community profiles
 
-Based on the published project checkpoint `c961eca`.
+Based on the uploaded `Folder-Locker-Latest-main.zip` checkpoint `c961eca`, with the already-deployed admin download/profile features from commit `ee430a7` preserved.
 
 ## Community presentation
 - The community page now has a clearly visible cyan board border with a layered neon shadow.
@@ -25,3 +25,18 @@ Based on the published project checkpoint `c961eca`.
 - Uses the existing Vercel API routes and Supabase-backed key/value stores.
 - No new environment variables or SQL migration are required for these changes.
 - Deploy the updated project to Vercel before testing the dashboard. New detailed download records begin with completed downloads after deployment; previous aggregate counts cannot be reconstructed into exact location/device history.
+
+
+## Public announcement color and account input improvements (2026-10-31)
+- Public announcement cards retain the exact cyan background `rgba(0,255,255,0.5)` while keeping their neon border and box shadow.
+- Usernames now accept 1–32 printable characters, including spaces, punctuation, symbols, and upper/lowercase letters. Names are case-insensitive for uniqueness and login; the displayed spelling is preserved. Repeated internal whitespace is normalized to a single space.
+- Registration requires username, password, and password confirmation; the server verifies the two password values match.
+- Password changes require the current password, new password, and matching confirmation as a complete set.
+- A **Show password** checkbox is provided beside relevant password fields. It is not a required input.
+
+## Account form and session updates (2026-10-31)
+- Public announcement cards use the exact background `rgba(0,255,255,0.5)`.
+- Usernames accept 1–32 printable characters, including spaces and symbols, with case-insensitive uniqueness and login lookup.
+- Registration and password changes require matching confirmation fields; password-change fields are all required together.
+- Show password controls are available for login, registration, account password changes, and administrator account creation.
+- Login includes a “Remember me” checkbox. Without it, sessions retain the two-hour expiry and use session storage in the browser. With it, the session lasts up to 30 days and the token is stored in local storage.
