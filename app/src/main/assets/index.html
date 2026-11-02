@@ -323,7 +323,7 @@ color:#0ff;font-size:12px;display:flex;align-items:center;gap:4px;border:1px sol
       <div class="folder" onclick="location.href='videos.html'"><div class="folder-icon" style="background:rgba(180,0,255,0.25);color:#b44dff">▶️</div><b>Videos</b><span>0 items</span><div class="arrow">›</div></div>
       <div class="folder" onclick="location.href='documents.html'"><div class="folder-icon" style="background:rgba(0,255,100,0.2);color:#0f8">📄</div><b>Documents</b><span>0 items</span><div class="arrow">›</div></div>
       <div class="folder" onclick="location.href='music.html'"><div class="folder-icon" style="background:rgba(255,160,0,0.25);color:#ffa500">🎵</div><b>Music</b><span>0 items</span><div class="arrow">›</div></div>
-      <div class="folder" onclick="location.href='files.html'"><div class="folder-icon" style="background:rgba(0,200,255,0.25);color:#0df">📁</div><b>Other Files</b><span>0 items</span><div class="arrow">›</div></div>
+      <div class="folder" role="link" tabindex="0" aria-label="Comment — About this App" onclick="openCommunityPage(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCommunityPage(event)}"><div class="folder-icon" style="background:rgba(0,200,255,0.25);color:#0df">💬</div><b>Comment</b><span>About this App</span><div class="arrow">›</div></div>
       <div 
       id="game"
       class="folder" style="border-color:#0ff;box-shadow:0 0 15px rgba(0,255,255,0.9)" onclick="location.href='games.html'">
@@ -364,6 +364,8 @@ function showAlert(){
 
 
 if(!requireUnlock())throw new Error('locked');
+function openCommunityPage(event){if(event)event.preventDefault();const url='https://folder-locker-my-first-app.vercel.app/community.html';if(window.AndroidVault&&typeof AndroidVault.openExternalUrl==='function'){const started=AndroidVault.openExternalUrl(url);if(!started)showPopup('Link unavailable','Android could not open the Community page. Check your internet connection and try again.');}else{window.location.href=url;}}
+
 function updateCounts(){document.querySelectorAll('.folder').forEach(el=>{let h=el.querySelector('b');let span=el.querySelector('span');if(!h||!span)return;let map={Photos:'images',Videos:'videos',Documents:'documents',Music:'music'};let c=map[h.textContent];if(c)span.textContent=listVault(c).length+' items';});}
 updateCounts();
 function updateBioStatus(){let on=window.AndroidVault&&AndroidVault.isFingerprintEnabled&&AndroidVault.isFingerprintEnabled();let el=document.getElementById('bioStatus');if(el)el.innerHTML='🌀 Biometric '+(on?'ON':'OFF')+' <span>›</span>'}

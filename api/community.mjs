@@ -18,17 +18,6 @@ const headers = {
 };
 const reply = (body, status = 200, extraHeaders = {}) => new Response(JSON.stringify(body), { status, headers: { ...headers, ...extraHeaders } });
 const clean = (value, max = 1200) => String(value ?? '').trim().slice(0, max);
-const USERNAME_MAX = 32;
-function normalizeUsername(value) {
-  return String(value ?? '').normalize('NFKC').trim().replace(/\s+/gu, ' ');
-}
-function validateUsername(username) {
-  const length = Array.from(String(username ?? '')).length;
-  return length >= 1 && length <= USERNAME_MAX && !/[\u0000-\u001F\u007F-\u009F]/u.test(username);
-}
-function usernameIndexKey(username) {
-  return `usernames/${encodeURIComponent(normalizeUsername(username).toLowerCase())}`;
-}
 const randomId = () => randomBytes(18).toString('hex');
 const tokenHash = token => createHash('sha256').update(token).digest('hex');
 const keyPart = value => encodeURIComponent(String(value));
@@ -44,7 +33,7 @@ function publicUser(user) {
 }
 function userRecord(username, pass, role = 'user') {
   const now = new Date().toISOString();
-  return { id: randomId(), username: normalizeUsername(username), usernameLower: normalizeUsername(username).toLowerCase(), passwordSalt: pass.salt, passwordHash: pass.hash, createdAt: now, role, displayNameColor: '#e9faff', badge: '', avatarKey: '', avatarMime: '', avatarUpdatedAt: 0 };
+  return { id: randomId(), username, usernameLower: username.toLowerCase(), passwordSalt: pass.salt, passwordHash: pass.hash, createdAt: now, lastSeenAt: now, role, displayNameColor: '#e9faff', badge: '', avatarKey: '', avatarMime: '', avatarUpdatedAt: 0 };
 }
 async function getJSON(key) { return await DB.get(key, { type: 'json', consistency: 'strong' }); }
 async function putJSON(key, value, options = {}) { return DB.setJSON(key, value, options); }
@@ -65,7 +54,7 @@ function normalizeAdminNote(item, key = '') {
   const note = item && typeof item === 'object' ? item : {};
   const id = String(note.id || key.split('/').pop() || randomId());
   const title = clean(note.title || note.subject || 'Untitled admin note', 100);
-  const text = clean(note.text ?? note.body ?? note.content ?? note.message ?? '', 4000);
+  const text = clean(note.text ?? note.body ?? note.content ?? note.message ?? '', 4010);
   if (!text) return null;
   return { id, title, text, authorId: note.authorId || note.userId || '', createdAt: note.createdAt || note.created || note.timestamp || '', updatedAt: note.updatedAt || note.modifiedAt || '', updatedBy: note.updatedBy || '', _storageKey: key };
 }
@@ -102,15 +91,12 @@ async function saveCanonicalAdminNote(note) {
 }
 async function getUser(id) { return id ? getJSON(`users/${id}`) : null; }
 async function findUserByName(username) {
-  const normalized = normalizeUsername(username);
-  if (!validateUsername(normalized)) return null;
-  const id = await DB.get(usernameIndexKey(normalized), { consistency: 'strong' });
+  const id = await DB.get(`usernames/${clean(username, 24).toLowerCase()}`, { consistency: 'strong' });
   return id ? getUser(id) : null;
 }
-async function createSession(user, rememberMe = false) {
+async function createSession(user) {
   const token = randomBytes(32).toString('hex');
-  const sessionDuration = rememberMe ? 30 * 24 * 60 * 60 * 1000 : SESSION_MS;
-  await putJSON(`sessions/${tokenHash(token)}`, { userId: user.id, expiresAt: Date.now() + sessionDuration });
+  await putJSON(`sessions/${tokenHash(token)}`, { userId: user.id, expiresAt: Date.now() + SESSION_MS });
   return token;
 }
 async function authUser(request) {
@@ -118,7 +104,12 @@ async function authUser(request) {
   if (!token || token.length > 200) return null;
   const session = await getJSON(`sessions/${tokenHash(token)}`);
   if (!session || Number(session.expiresAt || 0) <= Date.now()) return null;
-  return getUser(session.userId);
+  const user = await getUser(session.userId);
+  if (user && Date.now() - Number(user.lastSeenAtMs || 0) > 5 * 60 * 1000) {
+    user.lastSeenAt = new Date().toISOString(); user.lastSeenAtMs = Date.now();
+    try { await putJSON(`users/${user.id}`, user); } catch {}
+  }
+  return user;
 }
 function isAdmin(user) { return user?.role === 'admin'; }
 function secureEqual(a, b) {
@@ -126,13 +117,14 @@ function secureEqual(a, b) {
   const bb = Buffer.from(String(b || ''));
   return aa.length > 0 && aa.length === bb.length && timingSafeEqual(aa, bb);
 }
+function validateUsername(username) {
+  return /^[A-Za-z0-9_]{3,24}$/.test(username);
+}
 function validPassword(password, min = 4) {
   return typeof password === 'string' && password.length >= min && password.length <= 128;
 }
 async function reserveUsername(username, id) {
-  const normalized = normalizeUsername(username);
-  if (!validateUsername(normalized)) return false;
-  const result = await DB.set(usernameIndexKey(normalized), id, { onlyIfNew: true });
+  const result = await DB.set(`usernames/${username.toLowerCase()}`, id, { onlyIfNew: true });
   return result.modified;
 }
 async function loadPage(page, user) {
@@ -178,7 +170,7 @@ async function adminDashboard() {
   for (const item of likes) { likeCounts.set(item.userId, (likeCounts.get(item.userId) || 0) + 1); likesPerPost.set(item.postId, (likesPerPost.get(item.postId) || 0) + 1); }
   const publicAdminUser = user => ({
     id: user.id, username: user.username, role: user.role || 'user', createdAt: user.createdAt,
-    avatar: avatarUrl(user), displayNameColor: user.displayNameColor || '#e9faff', badge: user.badge || '',
+    avatar: avatarUrl(user), displayNameColor: user.displayNameColor || '#e9faff', badge: user.badge || '', lastSeenAt: user.lastSeenAt || '',
     postCount: postCounts.get(user.id) || 0, commentCount: commentCounts.get(user.id) || 0,
     replyCount: replyCounts.get(user.id) || 0, likeCount: likeCounts.get(user.id) || 0
   });
@@ -191,7 +183,7 @@ async function adminDashboard() {
       commentCount: comments.filter(comment => comment.postId === post.id).length
     })),
     comments: comments.sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt))).map(comment => ({
-      id: comment.id, postId: comment.postId, authorId: comment.authorId, postText: (postMap.get(comment.postId)?.text || '').slice(0,160),
+      id: comment.id, postId: comment.postId, postText: (postMap.get(comment.postId)?.text || '').slice(0,160),
       authorName: userMap.get(comment.authorId)?.username || 'Community member', text: comment.text, createdAt: comment.createdAt,
       replyCount: replies.filter(reply => reply.commentId === comment.id).length
     })),
@@ -296,7 +288,7 @@ async function communityHandler(request) {
     let body;
     try { body = await request.json(); } catch { return reply({ error: 'The request body must be valid JSON.' }, 400); }
     const action = clean(body.action, 40);
-    const username = normalizeUsername(body.username);
+    const username = clean(body.username, 24);
     let user = await authUser(request);
 
     if (action === 'provisionSystemAdmin') {
@@ -309,12 +301,12 @@ async function communityHandler(request) {
         && /[0-9]/.test(configuredPassword) && /[^A-Za-z0-9]/.test(configuredPassword);
       if (!strongPassword) return reply({ error: 'System account is not configured. Set SYSTEM_ADMIN_PASSWORD in Vercel to a strong password of at least 20 characters, then redeploy.' }, 503);
       const adminName = 'FolderLockerAdmin';
-      const reservedId = await DB.get(usernameIndexKey(adminName), { consistency: 'strong' });
+      const reservedId = await DB.get(`usernames/${adminName.toLowerCase()}`, { consistency: 'strong' });
       if (reservedId) {
         const existing = await getUser(reservedId);
         if (existing) return reply({ error: 'The system account already exists. Sign in through the normal Log in form as FolderLockerAdmin.' }, 409);
         // Recover a stale username reservation left by an interrupted first-time setup.
-        await DB.delete(usernameIndexKey(adminName));
+        await DB.delete(`usernames/${adminName.toLowerCase()}`);
       }
       let setup = await DB.set('meta/system-admin-created', new Date().toISOString(), { onlyIfNew: true });
       if (!setup.modified) {
@@ -332,7 +324,7 @@ async function communityHandler(request) {
       try {
         await putJSON(`users/${admin.id}`, admin, { onlyIfNew: true });
       } catch (error) {
-        await DB.delete(usernameIndexKey(adminName));
+        await DB.delete(`usernames/${adminName.toLowerCase()}`);
         await DB.delete('meta/system-admin-created');
         throw error;
       }
@@ -355,20 +347,21 @@ async function communityHandler(request) {
     }
 
     if (action === 'register') {
-      if (!validateUsername(username)) return reply({ error: 'Username must be 1–32 characters. Spaces and symbols are allowed.' }, 400);
+      if (!validateUsername(username)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
       if (!validPassword(body.password)) return reply({ error: 'Password must be 4–128 characters.' }, 400);
       if (body.password !== body.confirmPassword) return reply({ error: 'Passwords do not match.' }, 400);
       const newUser = userRecord(username, passwordHash(body.password));
       if (!(await reserveUsername(username, newUser.id))) return reply({ error: 'That username is already taken.' }, 409);
       try { await putJSON(`users/${newUser.id}`, newUser, { onlyIfNew: true }); }
-      catch (error) { await DB.delete(usernameIndexKey(username)); throw error; }
+      catch (error) { await DB.delete(`usernames/${username.toLowerCase()}`); throw error; }
       const token = await createSession(newUser);
       return reply({ user: publicUser(newUser), token }, 201);
     }
     if (action === 'login') {
       const target = await findUserByName(username);
       if (!target || !validPassword(body.password) || !passwordMatches(body.password, target)) return reply({ error: 'Username or password is incorrect.' }, 401);
-      const token = await createSession(target, body.rememberMe === true);
+      target.lastSeenAt = new Date().toISOString(); target.lastSeenAtMs = Date.now(); await putJSON(`users/${target.id}`, target);
+      const token = await createSession(target);
       return reply({ user: publicUser(target), token });
     }
     if (action === 'logout') {
@@ -384,16 +377,16 @@ async function communityHandler(request) {
     }
     if (action === 'createAdminAccount') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      const adminName = normalizeUsername(body.username || 'SanShania');
+      const adminName = clean(body.username || 'SanShania', 24);
       const pass = body.password;
-      if (!validateUsername(adminName)) return reply({ error: 'Username must be 1–32 characters. Spaces and symbols are allowed.' }, 400);
+      if (!validateUsername(adminName)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
       if (typeof pass !== 'string' || pass.length < 20 || pass.length > 128 || !/[A-Z]/.test(pass) || !/[a-z]/.test(pass) || !/[0-9]/.test(pass) || !/[^A-Za-z0-9]/.test(pass)) return reply({ error: 'Admin passwords must be 20–128 characters and include uppercase, lowercase, a number, and a symbol.' }, 400);
       if (pass !== body.confirmPassword) return reply({ error: 'Admin passwords do not match.' }, 400);
       const created = userRecord(adminName, passwordHash(pass), 'admin');
       created.badge = 'Admin';
       if (!(await reserveUsername(adminName, created.id))) return reply({ error: 'That username already exists.' }, 409);
       try { await putJSON(`users/${created.id}`, created, { onlyIfNew: true }); }
-      catch (error) { await DB.delete(usernameIndexKey(adminName)); throw error; }
+      catch (error) { await DB.delete(`usernames/${adminName.toLowerCase()}`); throw error; }
       return reply({ ok: true, username: adminName, message: 'Administrator account created. The new admin can log in normally.' }, 201);
     }
     if (action === 'setChatMode') {
@@ -404,16 +397,18 @@ async function communityHandler(request) {
     }
     if (action === 'createAdminNote') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      const title = clean(body.title, 100), text = clean(body.text, 4000);
-      if (!title || !text) return reply({ error: 'A note title and note text are required.' }, 400);
+      const title = clean(body.title, 100), rawText = clean(body.text, 4000);
+      const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
+      if (!title || !rawText) return reply({ error: 'A note title and note text are required.' }, 400);
       const note = { id: randomId(), authorId: user.id, title, text, createdAt: new Date().toISOString(), updatedAt: '' };
       await putJSON(`admin-notes/${note.id}`, note, { onlyIfNew: true });
       return reply({ ok: true, note }, 201);
     }
     if (action === 'editAdminNote') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      const id = clean(body.noteId, 80), title = clean(body.title, 100), text = clean(body.text, 4000);
-      if (!title || !text) return reply({ error: 'A note title and note text are required.' }, 400);
+      const id = clean(body.noteId, 80), title = clean(body.title, 100), rawText = clean(body.text, 4000);
+      const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
+      if (!title || !rawText) return reply({ error: 'A note title and note text are required.' }, 400);
       const note = await findAdminNote(id);
       if (!note) return reply({ error: 'Admin note not found.' }, 404);
       note.title = title; note.text = text; note.updatedAt = new Date().toISOString(); note.updatedBy = user.id;
@@ -446,44 +441,23 @@ async function communityHandler(request) {
       return reply({ user: publicUser(user) });
     }
     if (action === 'profile') {
-      const hasUsername = Object.prototype.hasOwnProperty.call(body, 'username');
-      const nextName = normalizeUsername(body.username);
-      if (hasUsername && !validateUsername(nextName)) return reply({ error: 'Username must be 1–32 characters. Spaces and symbols are allowed.' }, 400);
-      const passwordChangeRequested = ['currentPassword', 'password', 'confirmPassword'].some(key => Object.prototype.hasOwnProperty.call(body, key));
-      let nextPasswordHash = null;
-      if (passwordChangeRequested) {
+      const nextName = clean(body.username, 24);
+      let changedName = false;
+      const oldUsernameLower = user.usernameLower;
+      if (nextName && nextName !== user.username) {
+        if (!validateUsername(nextName)) return reply({ error: 'Username must be 3–24 letters, numbers, or underscores.' }, 400);
+        if (!(await reserveUsername(nextName, user.id))) return reply({ error: 'That username is already taken.' }, 409);
+        user.username = nextName; user.usernameLower = nextName.toLowerCase(); changedName = true;
+      }
+      if (body.password) {
         if (!validPassword(body.currentPassword, 4) || !passwordMatches(body.currentPassword, user)) return reply({ error: 'Your current password is incorrect.' }, 401);
         if (!validPassword(body.password, 4)) return reply({ error: 'New password must be 4–128 characters.' }, 400);
         if (body.password !== body.confirmPassword) return reply({ error: 'The new passwords do not match.' }, 400);
-        nextPasswordHash = passwordHash(body.password);
-      }
-      let changedName = false;
-      const oldUsername = user.username;
-      const oldUsernameLower = normalizeUsername(user.username).toLowerCase();
-      let reservedNewUsername = false;
-      if (hasUsername && nextName && nextName !== user.username) {
-        const nextUsernameLower = nextName.toLowerCase();
-        // A case-only change keeps the existing case-insensitive reservation.
-        if (nextUsernameLower !== oldUsernameLower) {
-          if (!(await reserveUsername(nextName, user.id))) return reply({ error: 'That username is already taken.' }, 409);
-          reservedNewUsername = true;
-        }
-        user.username = nextName;
-        user.usernameLower = nextUsernameLower;
-        changedName = true;
-      }
-      if (nextPasswordHash) {
-        user.passwordSalt = nextPasswordHash.salt;
-        user.passwordHash = nextPasswordHash.hash;
+        const pass = passwordHash(body.password); user.passwordSalt = pass.salt; user.passwordHash = pass.hash;
       }
       try { await putJSON(`users/${user.id}`, user); }
-      catch (error) {
-        if (reservedNewUsername) await DB.delete(usernameIndexKey(user.username));
-        user.username = oldUsername;
-        user.usernameLower = oldUsernameLower;
-        throw error;
-      }
-      if (changedName && user.usernameLower !== oldUsernameLower) await DB.delete(usernameIndexKey(oldUsername));
+      catch (error) { if (changedName) await DB.delete(`usernames/${user.usernameLower}`); throw error; }
+      if (changedName) await DB.delete(`usernames/${oldUsernameLower}`);
       return reply({ user: publicUser(user), changedName });
     }
     if (action === 'updateAppearance') {
@@ -529,15 +503,19 @@ async function communityHandler(request) {
     if (action === 'createPost') {
       const chatMode = await getJSON('meta/chat-paused');
       if (chatMode?.paused && !isAdmin(user)) return reply({ error: 'Community chat is paused. Only administrators can publish posts until chat is resumed.' }, 403);
-      const text = clean(body.text, 1200);
-      if (!text) return reply({ error: 'Write something before publishing.' }, 400);
+      const rawText = clean(body.text, 1200);
+      if (!rawText) return reply({ error: 'Write something before publishing.' }, 400);
+      if (body.htmlMode === true && !isAdmin(user)) return reply({ error: 'Only administrators can publish formatted HTML posts.' }, 403);
+      const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
       const post = { id: randomId(), authorId: user.id, text, createdAt: new Date().toISOString(), updatedAt: '' };
       await putJSON(`posts/${post.id}`, post, { onlyIfNew: true });
       return reply({ ok: true, id: post.id }, 201);
     }
     if (action === 'editPost') {
-      const postId = clean(body.postId, 80), text = clean(body.text, 1200);
-      if (!text) return reply({ error: 'Post cannot be empty.' }, 400);
+      const postId = clean(body.postId, 80), rawText = clean(body.text, 1200);
+      if (!rawText) return reply({ error: 'Post cannot be empty.' }, 400);
+      if (body.htmlMode === true && !isAdmin(user)) return reply({ error: 'Only administrators can publish formatted HTML posts.' }, 403);
+      const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
       const chatMode = await getJSON('meta/chat-paused');
       if (chatMode?.paused && !isAdmin(user)) return reply({ error: 'Members cannot publish or edit posts while community chat is paused.' }, 403);
       const post = await getJSON(`posts/${postId}`);
