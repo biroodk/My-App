@@ -138,6 +138,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
 .download-record p{margin:5px 0;overflow-wrap:anywhere;}
 .download-record a{color:var(--cyan);font-weight:800;}
 @media(max-width:600px){.community{width:calc(100% - 14px);margin:7px auto!important;border-radius:19px!important;padding:14px!important}.announcement-list{padding:9px}.admin-user-profile-head img{width:62px;height:62px;}}
+.post-read-more-row{display:flex;justify-content:flex-start;margin-top:10px}.post-read-more-row .read-more-link{margin:0}
 </style>
 </head>
 <body>
@@ -481,6 +482,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
        ${owner?`<form class="edit-form" data-edit="${esc(p.id)}" hidden><textarea name="text" maxlength="1200" rows="3" required>${esc(messageSource(p.text))}</textarea>${currentUser?.role==='admin'?`<label class="admin-html-toggle"><input type="checkbox" name="htmlMode" ${isHtmlMessage(p.text)?'checked':''}> Use HTML/CSS formatting</label>`:''}<div class="form-foot"><button type="submit">Save changes</button><button type="button" data-action="cancel-edit">Cancel</button></div></form>`:''}
        ${(canDiscuss&&selectedPostId===p.id)?`<form class="reply-form" data-comment="${esc(p.id)}"><input name="text" maxlength="700" required placeholder="Write a text comment…"><button type="submit">Comment</button></form>`:(selectedPostId===p.id&&!currentUser?'<p class="muted-small">Log in to comment or reply.</p>':(selectedPostId===p.id&&!canDiscuss?'<p class="muted-small">Chat is paused: you can discuss administrator posts only.</p>':''))}
        <div class="comments-list">${comments}</div>
+       ${!selectedPostId&&((p.comments||[]).length>=3)?`<div class="post-read-more-row"><button type="button" class="read-more-link" data-action="read-more" data-id="${esc(p.id)}">Read more</button></div>`:''}
      </article>`;
    }).join('');
  }
