@@ -155,6 +155,104 @@ async function loadPage(page, user) {
   const chatMode = await getJSON('meta/chat-paused');
   return { user: user ? publicUser(user) : null, posts, announcements, chatPaused: !!chatMode?.paused, page, pageSize: PAGE_SIZE, total, hasMore: offset + posts.length < total };
 }
+async function userProfileData(targetId, viewer) {
+  const target = targetId === viewer.id ? viewer : await getUser(targetId);
+  if (!target) return null;
+  const own = target.id === viewer.id;
+  const [users, allPosts, allComments, allReplies, allLikes] = await Promise.all([
+    listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'), listJSON('likes/')
+  ]);
+  const userMap = new Map(users.map(item => [item.id, item]));
+  const postMap = new Map(allPosts.map(item => [item.id, item]));
+  const commentMap = new Map(allComments.map(item => [item.id, item]));
+  const likeCounts = new Map();
+  const commentCounts = new Map();
+  const replyCounts = new Map();
+  for (const like of allLikes) likeCounts.set(like.postId, (likeCounts.get(like.postId) || 0) + 1);
+  for (const comment of allComments) commentCounts.set(comment.postId, (commentCounts.get(comment.postId) || 0) + 1);
+  for (const reply of allReplies) replyCounts.set(reply.commentId, (replyCounts.get(reply.commentId) || 0) + 1);
+
+  const targetPosts = allPosts.filter(item => item.authorId === target.id)
+    .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const publicProfile = { id: target.id, username: target.username, avatar: avatarUrl(target) };
+
+  if (!own) {
+    // Public profile response is deliberately narrow: identity picture/name and
+    // authored post content only. No role, badge, timestamps, account data,
+    // private activity, engagement totals, or administrator flags are returned.
+    return {
+      own: false,
+      user: publicProfile,
+      posts: targetPosts.map(post => ({
+        id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || ''
+      }))
+    };
+  }
+
+  const ownComments = allComments.filter(item => item.authorId === target.id)
+    .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const comments = ownComments.map(item => {
+    const post = postMap.get(item.postId);
+    const postAuthor = post ? userMap.get(post.authorId) : null;
+    return {
+      id: item.id, postId: item.postId, text: item.text, createdAt: item.createdAt,
+      postText: (post?.text || '').slice(0, 260), postAuthorName: postAuthor?.username || 'Community member',
+      replyCount: replyCounts.get(item.id) || 0
+    };
+  });
+  const replies = allReplies.filter(item => item.authorId === target.id)
+    .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map(item => {
+      const comment = commentMap.get(item.commentId);
+      const post = comment ? postMap.get(comment.postId) : null;
+      return {
+        id: item.id, postId: comment?.postId || '', text: item.text, createdAt: item.createdAt,
+        commentText: (comment?.text || '').slice(0, 260),
+        postText: (post?.text || '').slice(0, 260)
+      };
+    });
+  const likedPosts = allLikes.filter(item => item.userId === target.id)
+    .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map(item => {
+      const post = postMap.get(item.postId);
+      const author = post ? userMap.get(post.authorId) : null;
+      return post ? { id: post.id, text: post.text, createdAt: post.createdAt, authorName: author?.username || 'Community member' } : null;
+    }).filter(Boolean);
+  const ownCommentsByPost = new Map();
+  for (const item of ownComments) {
+    if (!ownCommentsByPost.has(item.postId)) ownCommentsByPost.set(item.postId, []);
+    ownCommentsByPost.get(item.postId).push(item);
+  }
+  const commentedPosts = [...ownCommentsByPost.entries()].map(([postId, postComments]) => {
+    const post = postMap.get(postId);
+    if (!post) return null;
+    const author = userMap.get(post.authorId);
+    return {
+      id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || '',
+      authorName: author?.username || 'Community member',
+      comments: postComments.map(item => ({
+        id: item.id, text: item.text, createdAt: item.createdAt, replyCount: replyCounts.get(item.id) || 0
+      }))
+    };
+  }).filter(Boolean);
+  const posts = targetPosts.map(post => ({
+    id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || '',
+    isAdminPost: target.role === 'admin',
+    likeCount: likeCounts.get(post.id) || 0,
+    commentCount: commentCounts.get(post.id) || 0
+  }));
+  return {
+    own: true,
+    user: { ...publicProfile, role: target.role || 'user', displayNameColor: target.displayNameColor || '#e9faff', badge: target.badge || '', createdAt: target.createdAt || '', lastSeenAt: target.lastSeenAt || '' },
+    stats: {
+      posts: posts.length,
+      comments: ownComments.length,
+      replies: replies.length,
+      likes: likedPosts.length
+    },
+    posts, commentedPosts, comments, replies, likedPosts
+  };
+}
 async function adminDashboard() {
   const [users, posts, comments, replies, announcements, notes, likes, chatMode, recycleBin] = await Promise.all([
     listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'),
@@ -370,6 +468,14 @@ async function communityHandler(request) {
       return reply({ ok: true });
     }
     if (!user) return reply({ error: 'Please log in to continue.' }, 401);
+
+    if (action === 'getUserProfile') {
+      const targetId = clean(body.userId, 80);
+      if (!targetId) return reply({ error: 'Choose a profile to view.' }, 400);
+      const profile = await userProfileData(targetId, user);
+      if (!profile) return reply({ error: 'That community profile could not be found.' }, 404);
+      return reply(profile);
+    }
 
     if (action === 'adminDashboard') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
