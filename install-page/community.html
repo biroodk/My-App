@@ -149,6 +149,19 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
 .reply-avatar-button img{width:28px;height:28px;object-fit:cover;border-radius:50%}
 .post-profile-name,.comment-profile-name,.reply-profile-name{font-weight:800;overflow-wrap:anywhere}
 .reply-count{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:3px 7px;border:1px solid rgba(28,227,255,.25);border-radius:20px;background:rgba(28,227,255,.07);color:#8feaff;font-size:10px;font-weight:800;white-space:nowrap}
+
+.avatar-preview-overlay{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,4,16,.94);backdrop-filter:blur(10px)}
+.avatar-preview-overlay[hidden]{display:none!important}
+.avatar-preview-dialog{position:relative;width:min(92vw,520px);max-height:90vh;padding:16px;border:1px solid rgba(28,227,255,.55);border-radius:20px;background:#06142c;box-shadow:0 0 35px rgba(28,227,255,.2);text-align:center}
+.avatar-preview-image{display:block;width:min(78vw,440px);height:min(78vw,440px);max-height:68vh;margin:20px auto 10px;object-fit:contain;border-radius:14px;background:#020817}
+.avatar-preview-close{position:absolute;top:8px;right:8px;width:42px;height:42px;border:1px solid rgba(28,227,255,.4);border-radius:50%;background:#0b2446;color:#fff;font-size:25px;cursor:pointer}
+.avatar-preview-caption{margin:6px 42px 0;color:#c5d7f5;font-size:13px;overflow-wrap:anywhere}
+.profile-open-post{display:inline-flex;align-items:center;justify-content:center;margin:8px 0 2px;padding:8px 11px;border:1px solid rgba(28,227,255,.35);border-radius:10px;background:rgba(28,227,255,.08);color:#8feaff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.profile-open-post:focus-visible,.avatar-preview-close:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.profile-avatar-preview-button{display:inline-flex;align-items:center;justify-content:center;border:0;padding:0;background:transparent;cursor:zoom-in}
+.profile-panel-avatar-button{border-radius:50%;overflow:hidden;flex:0 0 76px}
+.post-avatar-button,.comment-avatar-button,.reply-avatar-button{cursor:zoom-in!important}
+
 .profile-panel{margin:14px 0;padding:14px;border:1px solid rgba(28,227,255,.3);border-radius:15px;background:rgba(2,10,30,.9)}
 .profile-panel-head{display:flex;align-items:center;gap:12px;min-width:0;margin:10px 0 14px}
 .profile-panel-avatar{width:76px;height:76px;flex:0 0 76px;object-fit:cover;border-radius:50%;border:2px solid var(--cyan);background:#071532}
@@ -198,7 +211,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    <a href="https://chat.whatsapp.com/GqKi4FjlWJf5zzCc2692v5?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" target="_blank" rel="noopener noreferrer">Join Linear Programming</a>
    <button type="button" id="moveLearnWa" aria-label="Move WhatsApp shortcut" title="Drag to move; it snaps to an edge">↔ Move</button>
   </div>
-  <div class="community-user"><button type="button" class="profile-clickable community-user-avatar-button" data-profile-current aria-label="Open your profile"><img id="currentAvatar" alt="Your profile picture" src="/icon.png"></button><div class="community-user-text"><button type="button" class="profile-clickable profile-name-button" id="currentUsername" data-profile-current></button><span>Signed in · tap your name or picture to view your profile</span></div><button type="button" class="tiny-btn" id="logoutButton">Log out</button></div>
+  <div class="community-user"><button type="button" class="profile-clickable community-user-avatar-button" data-profile-current data-avatar-preview aria-label="View your profile picture"><img id="currentAvatar" alt="Your profile picture" src="/icon.png"></button><div class="community-user-text"><button type="button" class="profile-clickable profile-name-button" id="currentUsername" data-profile-current></button><span>Signed in · tap your name or picture to view your profile</span></div><button type="button" class="tiny-btn" id="logoutButton">Log out</button></div>
   <section id="profilePanel" class="profile-panel" hidden aria-live="polite"><button type="button" class="tiny-btn" data-profile-back>← Back to community posts</button><div id="profileContent"></div></section>
   <form id="postForm" class="community-form">
    <label for="postText">Create a post</label><textarea id="postText" maxlength="1200" rows="3" required placeholder="Write a text-only post…"></textarea><label id="postHtmlModeWrap" class="admin-html-toggle" hidden><input id="postHtmlMode" type="checkbox"> Use HTML/CSS formatting (admin only)</label>
@@ -245,6 +258,14 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  <p class="community-foot" id="communityFooter" style="color: #ff0000; font-weight: bold;">⚠️Be respectful. Do not use bad words</p>
 </section>
 
+<div class="avatar-preview-overlay" id="avatarPreviewOverlay" hidden role="dialog" aria-modal="true" aria-label="Profile picture preview">
+ <div class="avatar-preview-dialog">
+  <button type="button" class="avatar-preview-close" data-avatar-close aria-label="Close profile picture preview">×</button>
+  <img class="avatar-preview-image" id="avatarPreviewImage" src="/icon.png" alt="Profile picture">
+  <p class="avatar-preview-caption" id="avatarPreviewCaption">Profile picture</p>
+ </div>
+</div>
+
 <div class="community-confirm-overlay" id="communityConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="communityConfirmTitle" aria-describedby="communityConfirmMessage">
  <div class="community-confirm-dialog"><h3 id="communityConfirmTitle">Confirm action</h3><p id="communityConfirmMessage"></p><div class="community-confirm-actions"><button type="button" id="communityConfirmCancel">Cancel</button><button type="button" class="confirm-yes" id="communityConfirmAccept">Continue</button></div></div>
 </div>
@@ -261,6 +282,9 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  let currentPage=1;
  let selectedPostId='';
  let profileReturnState=null;
+ let profileViewedUserId='';
+ let profileActiveTab='posts';
+ let profileThreadReturn=false;
  let pageHasMore=false;
  let totalPosts=0;
  let chatPaused=false;
@@ -488,43 +512,47 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
  }
 
  function profileEntry(text,meta='',html=false){return `<article class="profile-entry">${html?renderMessage(text,true):`<p>${renderMessage(text,false)}</p>`}<span class="post-date">${esc(meta)}</span></article>`}
+ function profileDiscussionButton(postId,count){
+   return `<button type="button" class="profile-open-post" data-profile-open-post="${esc(postId)}">View discussion · ${fmt(count)} comments</button>`;
+ }
  function renderUserProfile(data,tab='posts'){
    const user=data.user||{},own=!!data.own,content=$('profileContent');
    const avatar=user.avatar||'/icon.png';
-   let html=`<div class="profile-panel-head"><img class="profile-panel-avatar" src="${esc(avatar)}" alt="${esc(user.username||'Community member')} profile picture"><div class="profile-panel-info"><h3 style="color:${/^#[0-9a-fA-F]{6}$/.test(user.displayNameColor||'')?user.displayNameColor:'#e9faff'}">${esc(user.username||'Community member')}${own&&user.badge?` <span class="profile-badge">${esc(user.badge)}</span>`:''}</h3>${own?`<div class="muted-small">${esc(user.role||'user')} · Joined ${esc(user.createdAt?when(user.createdAt):'Not recorded')} · Last seen ${esc(user.lastSeenAt?when(user.lastSeenAt):'Not recorded yet')}</div>`:``}</div></div>`;
+   let html=`<div class="profile-panel-head"><button type="button" class="profile-avatar-preview-button profile-panel-avatar-button" data-avatar-preview aria-label="View ${esc(user.username||'Community member')} profile picture"><img class="profile-panel-avatar" src="${esc(avatar)}" alt="${esc(user.username||'Community member')} profile picture"></button><div class="profile-panel-info"><h3 style="color:${/^#[0-9a-fA-F]{6}$/.test(user.displayNameColor||'')?user.displayNameColor:'#e9faff'}">${esc(user.username||'Community member')}${own&&user.badge?` <span class="profile-badge">${esc(user.badge)}</span>`:''}</h3>${own?`<div class="muted-small">${esc(user.role||'user')} · Joined ${esc(user.createdAt?when(user.createdAt):'Not recorded')} · Last seen ${esc(user.lastSeenAt?when(user.lastSeenAt):'Not recorded yet')}</div>`:``}</div></div>`;
    if(own){
      const stats=data.stats||{};
      html+=`<div class="profile-stat-grid"><div class="profile-stat"><b>${fmt(stats.posts)}</b><span>Posts</span></div><div class="profile-stat"><b>${fmt(stats.comments)}</b><span>Comments</span></div><div class="profile-stat"><b>${fmt(stats.replies)}</b><span>Replies</span></div><div class="profile-stat"><b>${fmt(stats.likes)}</b><span>Likes given</span></div></div><div class="profile-toolbar"><button type="button" class="secondary" data-profile-settings>⚙️ Account settings</button>${currentUser?.role==='admin'?'<button type="button" class="secondary" data-profile-admin>⚙️ Admin dashboard</button>':''}</div><div class="profile-tabs">${[['posts','My posts',stats.posts],['commented','Posts I commented on',(data.commentedPosts||[]).length],['comments','My comments',stats.comments],['replies','My replies',stats.replies],['likes','Posts I liked',stats.likes]].map(([key,label,count])=>`<button type="button" class="tiny-btn ${tab===key?'active':''}" data-profile-tab="${key}">${label} (${fmt(count)})</button>`).join('')}</div>`;
      if(tab==='commented'){
        const items=data.commentedPosts||[];
-       html+=items.map(item=>`<article class="profile-entry"><b>Post by ${esc(item.authorName||'Community member')}</b><p><b>Original post:</b> ${renderMessage(item.text,isHtmlMessage(item.text))}</p><span class="post-date">${esc(when(item.createdAt))} · ${fmt(item.comments?.length)} of your comments</span>${(item.comments||[]).map(comment=>`<p><b>Your comment:</b> ${esc(comment.text)} <span class="post-date">${esc(when(comment.createdAt))} · ${fmt(comment.replyCount)} replies</span></p>`).join('')}</article>`).join('')||'<p class="muted-small">You have not commented on any available posts yet.</p>';
+       html+=items.map(item=>`<article class="profile-entry"><b>Post by ${esc(item.authorName||'Community member')}</b><p><b>Original post:</b> ${renderMessage(item.text,isHtmlMessage(item.text))}</p><span class="post-date">${esc(when(item.createdAt))} · ${fmt(item.commentCount)} total comments · ${fmt(item.comments?.length)} of your comments</span>${profileDiscussionButton(item.id,item.commentCount)}${(item.comments||[]).map(comment=>`<p><b>Your comment:</b> ${esc(comment.text)} <span class="post-date">${esc(when(comment.createdAt))} · ${fmt(comment.replyCount)} replies</span></p>`).join('')}</article>`).join('')||'<p class="muted-small">You have not commented on any available posts yet.</p>';
      }else if(tab==='comments'){
        const items=data.comments||[];
-       html+=items.map(item=>`<article class="profile-entry"><b>Comment on ${esc(item.postAuthorName||'a community post')}</b><p><b>Original post:</b> ${esc(item.postText||'(post unavailable)')}</p><p>${esc(item.text)}</p><span class="post-date">${esc(when(item.createdAt))} · ${fmt(item.replyCount)} replies on this comment</span></article>`).join('')||'<p class="muted-small">You have not commented on any posts yet.</p>';
+       html+=items.map(item=>`<article class="profile-entry"><b>Comment on ${esc(item.postAuthorName||'a community post')}</b><p><b>Original post:</b> ${esc(item.postText||'(post unavailable)')}</p><p>${esc(item.text)}</p><span class="post-date">${esc(when(item.createdAt))} · ${fmt(item.replyCount)} replies</span>${item.postId?profileDiscussionButton(item.postId,item.postCommentCount):''}</article>`).join('')||'<p class="muted-small">You have not commented on any posts yet.</p>';
      }else if(tab==='replies'){
        const items=data.replies||[];
-       html+=items.map(item=>`<article class="profile-entry"><b>Your reply</b><p><b>Original post:</b> ${esc(item.postText||'(post unavailable)')}</p><p><b>Comment:</b> ${esc(item.commentText||'(comment unavailable)')}</p><p>${esc(item.text)}</p><span class="post-date">${esc(when(item.createdAt))}</span></article>`).join('')||'<p class="muted-small">You have not replied to any comments yet.</p>';
+       html+=items.map(item=>`<article class="profile-entry"><b>Your reply</b><p><b>Original post:</b> ${esc(item.postText||'(post unavailable)')}</p><p><b>Comment:</b> ${esc(item.commentText||'(comment unavailable)')}</p><p>${esc(item.text)}</p><span class="post-date">${esc(when(item.createdAt))}</span>${item.postId?profileDiscussionButton(item.postId,item.postCommentCount||0):''}</article>`).join('')||'<p class="muted-small">You have not replied to any comments yet.</p>';
      }else if(tab==='likes'){
-       html+=(data.likedPosts||[]).map(item=>`<article class="profile-entry"><b>Post by ${esc(item.authorName||'Community member')}</b><p>${renderMessage(item.text,isHtmlMessage(item.text))}</p><span class="post-date">${esc(when(item.createdAt))}</span></article>`).join('')||'<p class="muted-small">You have not liked any posts yet.</p>';
+       html+=(data.likedPosts||[]).map(item=>`<article class="profile-entry"><b>Post by ${esc(item.authorName||'Community member')}</b><p>${renderMessage(item.text,isHtmlMessage(item.text))}</p><span class="post-date">${esc(when(item.createdAt))}</span>${profileDiscussionButton(item.id,item.commentCount||0)}</article>`).join('')||'<p class="muted-small">You have not liked any posts yet.</p>';
      }else{
-       html+=(data.posts||[]).map(item=>`<article class="profile-entry"><div class="admin-detail-message">${renderMessage(item.text,isHtmlMessage(item.text))}</div><span class="post-date">${esc(when(item.createdAt))}${item.updatedAt?' · edited':''} · ${fmt(item.likeCount)} likes · ${fmt(item.commentCount)} comments</span></article>`).join('')||'<p class="muted-small">You have not published any posts yet.</p>';
+       html+=(data.posts||[]).map(item=>`<article class="profile-entry"><div class="admin-detail-message">${renderMessage(item.text,isHtmlMessage(item.text))}</div><span class="post-date">${esc(when(item.createdAt))}${item.updatedAt?' · edited':''} · ${fmt(item.likeCount)} likes · ${fmt(item.commentCount)} comments</span>${profileDiscussionButton(item.id,item.commentCount||0)}</article>`).join('')||'<p class="muted-small">You have not published any posts yet.</p>';
      }
    }else{
-     html+=(data.posts||[]).map(item=>`<article class="profile-entry"><div class="admin-detail-message">${renderMessage(item.text,isHtmlMessage(item.text))}</div><span class="post-date">${esc(when(item.createdAt))}${item.updatedAt?' · edited':''}</span></article>`).join('')||'<p class="muted-small">This user has not published any posts yet.</p>';
+     html+=(data.posts||[]).map(item=>`<article class="profile-entry"><div class="admin-detail-message">${renderMessage(item.text,isHtmlMessage(item.text))}</div><span class="post-date">${esc(when(item.createdAt))}${item.updatedAt?' · edited':''} · ${fmt(item.commentCount)} comments</span>${profileDiscussionButton(item.id,item.commentCount||0)}</article>`).join('')||'<p class="muted-small">This user has not published any posts yet.</p>';
    }
    content.innerHTML=html;
  }
- async function openUserProfile(userId){
+ async function openUserProfile(userId,tab='posts'){
    if(!currentUser){notice('Log in to open member profiles.','error');return}
    try{
      const data=await api('getUserProfile',{userId});
+     profileViewedUserId=userId;profileActiveTab=tab;
      if(!profileReturnState){
        const ids=['communityTop','communityHeading','announcementList','communityNotice','communityFooter','learnWaDock','postForm','settingsDetails','openSettingsButton','chatModeNotice','openAdminDashboard','adminDashboard','postsList','postPagination'];
        profileReturnState={selectedPostId,currentPage,hidden:Object.fromEntries(ids.map(id=>[id,$(id).hidden]))};
      }
      Object.keys(profileReturnState.hidden).forEach(id=>$(id).hidden=true);
      $('profilePanel').hidden=false;
-     renderUserProfile(data,'posts');
+     renderUserProfile(data,tab);
      $('profilePanel').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){notice(error.message,'error')}
  }
@@ -532,7 +560,7 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    if(!profileReturnState)return;
    $('profilePanel').hidden=true;
    Object.entries(profileReturnState.hidden).forEach(([id,hidden])=>$(id).hidden=hidden);
-   selectedPostId=profileReturnState.selectedPostId;currentPage=profileReturnState.currentPage;profileReturnState=null;
+   selectedPostId=profileReturnState.selectedPostId;currentPage=profileReturnState.currentPage;profileReturnState=null;profileThreadReturn=false;profileViewedUserId='';profileActiveTab='posts';
    $('postsList').scrollIntoView({behavior:'smooth',block:'start'});
  }
 
@@ -545,12 +573,12 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
      const liked=currentUser&&(p.likes||[]).includes(currentUser.id);
      const canDiscuss=!!currentUser&&(!chatPaused||currentUser.role==='admin'||p.authorRole==='admin');
      const canLike=!!currentUser&&(!chatPaused||currentUser.role==='admin'||p.authorRole==='admin');
-     const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="comment-item"><div class="comment-head"><button type="button" class="profile-clickable comment-avatar-button" data-profile-user="${esc(c.authorId)}" aria-label="Open ${esc(c.authorName)} profile"><img class="comment-avatar" src="${esc(c.authorAvatar||'/icon.png')}" alt="${esc(c.authorName)} profile picture"></button><div class="comment-content"><div class="comment-meta"><button type="button" class="profile-clickable comment-profile-name" data-profile-user="${esc(c.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</button><span class="post-date">${esc(when(c.createdAt))}</span><span class="reply-count">↩ ${Number((c.replies||[]).length)} repl${(c.replies||[]).length===1?'y':'ies'}</span></div><p>${renderMessage(c.text,false)}</p></div></div>
+     const comments=(selectedPostId===p.id?(p.comments||[]):(p.comments||[]).slice(0,3)).map(c=>`<div class="comment-item"><div class="comment-head"><button type="button" class="profile-clickable comment-avatar-button" data-profile-user="${esc(c.authorId)}" data-avatar-preview aria-label="Open ${esc(c.authorName)} profile"><img class="comment-avatar" src="${esc(c.authorAvatar||'/icon.png')}" alt="${esc(c.authorName)} profile picture"></button><div class="comment-content"><div class="comment-meta"><button type="button" class="profile-clickable comment-profile-name" data-profile-user="${esc(c.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(c.authorColor||'')?c.authorColor:'var(--cyan)'}">${esc(c.authorName)}${c.badge?` <span class="profile-badge">${esc(c.badge)}</span>`:''}</button><span class="post-date">${esc(when(c.createdAt))}</span><span class="reply-count">↩ ${Number((c.replies||[]).length)} repl${(c.replies||[]).length===1?'y':'ies'}</span></div><p>${renderMessage(c.text,false)}</p></div></div>
        ${(canDiscuss&&selectedPostId===p.id)?`<form class="reply-form" data-reply="${esc(c.id)}" data-post="${esc(p.id)}"><input name="text" maxlength="500" required placeholder="Reply to ${esc(c.authorName)}…"><button type="submit">Reply</button></form>`:''}
-       <div class="reply-list">${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item"><button type="button" class="profile-clickable reply-avatar-button" data-profile-user="${esc(r.authorId)}" aria-label="Open ${esc(r.authorName)} profile"><img class="reply-avatar" src="${esc(r.authorAvatar||'/icon.png')}" alt="${esc(r.authorName)} profile picture"></button><div class="reply-body"><button type="button" class="profile-clickable reply-name" data-profile-user="${esc(r.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'#75eaff'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</button><p>${renderMessage(r.text,false)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div></div>`).join('')}</div>
+       <div class="reply-list">${(selectedPostId===p.id?(c.replies||[]):(c.replies||[]).slice(0,1)).map(r=>`<div class="reply-item"><button type="button" class="profile-clickable reply-avatar-button" data-profile-user="${esc(r.authorId)}" data-avatar-preview aria-label="Open ${esc(r.authorName)} profile"><img class="reply-avatar" src="${esc(r.authorAvatar||'/icon.png')}" alt="${esc(r.authorName)} profile picture"></button><div class="reply-body"><button type="button" class="profile-clickable reply-name" data-profile-user="${esc(r.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(r.authorColor||'')?r.authorColor:'#75eaff'}">${esc(r.authorName)}${r.badge?` <span class="profile-badge">${esc(r.badge)}</span>`:''}</button><p>${renderMessage(r.text,false)}</p><span class="post-date">${esc(when(r.createdAt))}</span></div></div>`).join('')}</div>
      </div>`).join('');
      return `<article class="post-card" data-post-card="${esc(p.id)}">
-       <div class="post-author"><button type="button" class="profile-clickable post-avatar-button" data-profile-user="${esc(p.authorId)}" aria-label="Open ${esc(p.authorName)} profile"><img class="post-avatar" src="${esc(p.authorAvatar||'/icon.png')}" alt="${esc(p.authorName)} profile picture"></button><div class="post-author-meta"><button type="button" class="profile-clickable post-profile-name" data-profile-user="${esc(p.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(p.authorColor||'')?p.authorColor:'#e9faff'}">${esc(p.authorName)}${p.badge?` <span class="profile-badge">${esc(p.badge)}</span>`:''}</button><span class="post-date">${esc(when(p.createdAt))}${p.updatedAt?' • edited':''}</span></div></div>
+       <div class="post-author"><button type="button" class="profile-clickable post-avatar-button" data-profile-user="${esc(p.authorId)}" data-avatar-preview aria-label="Open ${esc(p.authorName)} profile"><img class="post-avatar" src="${esc(p.authorAvatar||'/icon.png')}" alt="${esc(p.authorName)} profile picture"></button><div class="post-author-meta"><button type="button" class="profile-clickable post-profile-name" data-profile-user="${esc(p.authorId)}" style="color:${/^#[0-9a-fA-F]{6}$/.test(p.authorColor||'')?p.authorColor:'#e9faff'}">${esc(p.authorName)}${p.badge?` <span class="profile-badge">${esc(p.badge)}</span>`:''}</button><span class="post-date">${esc(when(p.createdAt))}${p.updatedAt?' • edited':''}</span></div></div>
        <div class="post-text" data-post-text>${renderMessage(p.text,p.authorRole==='admin')}</div>
        <div class="post-actions"><button type="button" data-action="like" data-id="${esc(p.id)}" class="${liked?'liked':''}" ${!canLike?'disabled title="Members can like admin posts only while chat is paused"':''}>♥ ${Number((p.likes||[]).length)} Like${(p.likes||[]).length===1?'':'s'}</button>
        ${owner?`<button type="button" data-action="edit" data-id="${esc(p.id)}">Edit post</button><button type="button" class="danger" data-action="delete" data-id="${esc(p.id)}">Delete post</button>`:''}${currentUser?.role==='admin'&&!owner?`<button type="button" class="danger" data-action="admin-delete" data-id="${esc(p.id)}">Admin delete</button>`:''}
@@ -689,7 +717,18 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    const b=e.target.closest('button[data-action]');if(!b)return;
    const action=b.dataset.action,id=b.dataset.id;
    if(action==='read-more'){selectedPostId=id;await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
-   if(action==='back-posts'){selectedPostId='';await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return}
+   if(action==='back-posts'){
+     if(profileThreadReturn&&profileReturnState){
+       profileThreadReturn=false;
+       Object.keys(profileReturnState.hidden).forEach(id=>$(id).hidden=true);
+       $('profilePanel').hidden=false;
+       selectedPostId=profileReturnState.selectedPostId;currentPage=profileReturnState.currentPage;
+       try{const data=await api('getUserProfile',{userId:profileViewedUserId});renderUserProfile(data,profileActiveTab)}
+       catch(err){notice(err.message,'error')}
+       $('profilePanel').scrollIntoView({behavior:'smooth',block:'start'});return;
+     }
+     selectedPostId='';await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return;
+   }
    if(action==='cancel-edit'){const f=b.closest('.edit-form');f.hidden=true;return}
    if(action==='edit'){const f=$('postsList').querySelector(`form[data-edit="${CSS.escape(id)}"]`);if(f)f.hidden=false;return}
    if(action==='admin-delete'){if(currentUser?.role!=='admin')return;if(!await styledConfirm('Move this post and its comments to the recycle bin? It can be restored for 30 minutes.',{title:'Move to recycle bin',confirmText:'Move to bin',danger:true}))return;try{await api('adminDeletePost',{postId:id});notice('Post moved to the recycle bin for 30 minutes.','success');await load();await loadAdminDashboard()}catch(err){notice(err.message,'error')}return}
@@ -699,16 +738,50 @@ main.community-page{width:100%;max-width:none;margin:0;padding:0}
    }
    if(action==='like'){try{await api('likePost',{postId:id});await load()}catch(err){notice(err.message,'error')}}
  });
+ function showAvatarPreview(button){
+   const source=button.querySelector('img');
+   const url=source?(source.currentSrc||source.src):'';
+   if(!url)return;
+   $('avatarPreviewImage').src=url;
+   $('avatarPreviewImage').alt=source?.alt||'Community member profile picture';
+   $('avatarPreviewCaption').textContent=(source?.alt||'Profile picture').replace(/\s*profile picture$/i,'');
+   $('avatarPreviewOverlay').hidden=false;
+   $('avatarPreviewOverlay').setAttribute('aria-hidden','false');
+   document.body.style.overflow='hidden';
+   $('avatarPreviewOverlay').querySelector('[data-avatar-close]').focus();
+ }
+ function hideAvatarPreview(){
+   $('avatarPreviewOverlay').hidden=true;
+   $('avatarPreviewOverlay').setAttribute('aria-hidden','true');
+   $('avatarPreviewImage').src='/icon.png';
+   document.body.style.overflow='';
+ }
+ $('avatarPreviewOverlay').addEventListener('click',e=>{
+   if(e.target===$('avatarPreviewOverlay')||e.target.closest('[data-avatar-close]'))hideAvatarPreview();
+ });
+ document.addEventListener('keydown',e=>{
+   if(e.key==='Escape'&&!$('avatarPreviewOverlay').hidden)hideAvatarPreview();
+ });
  $('communityApp').addEventListener('click',async e=>{
+   const avatarButton=e.target.closest('[data-avatar-preview]');
+   if(avatarButton){showAvatarPreview(avatarButton);return}
    const current=e.target.closest('[data-profile-current]');
    if(current){if(currentUser)await openUserProfile(currentUser.id);return}
    const member=e.target.closest('[data-profile-user]');
    if(member){if(member.dataset.profileUser)await openUserProfile(member.dataset.profileUser);return}
  });
  $('profilePanel').addEventListener('click',async e=>{
-   if(e.target.closest('[data-profile-back]')){closeUserProfile();return}
+   const discussion=e.target.closest('[data-profile-open-post]');
+   if(discussion){
+     profileThreadReturn=true;
+     $('profilePanel').hidden=true;
+     Object.entries(profileReturnState.hidden).forEach(([id,hidden])=>$(id).hidden=hidden);
+     selectedPostId=discussion.dataset.profileOpenPost;currentPage=1;
+     await load();$('postsList').scrollIntoView({behavior:'smooth',block:'start'});return;
+   }
+   if(e.target.closest('[data-profile-back]')){profileThreadReturn=false;closeUserProfile();return}
    const tab=e.target.closest('[data-profile-tab]');
-   if(tab){try{const data=await api('getUserProfile',{userId:currentUser.id});renderUserProfile(data,tab.dataset.profileTab)}catch(error){notice(error.message,'error')}return}
+   if(tab){try{const data=await api('getUserProfile',{userId:currentUser.id});profileActiveTab=tab.dataset.profileTab;renderUserProfile(data,profileActiveTab)}catch(error){notice(error.message,'error')}return}
    if(e.target.closest('[data-profile-settings]')){closeUserProfile();$('settingsDetails').hidden=false;$('settingsDetails').open=true;$('openSettingsButton').hidden=true;$('settingsDetails').scrollIntoView({behavior:'smooth',block:'start'});return}
    if(e.target.closest('[data-profile-admin]')){closeUserProfile();$('adminDashboard').hidden=false;await loadAdminDashboard();$('adminDashboard').scrollIntoView({behavior:'smooth',block:'start'});return}
  });

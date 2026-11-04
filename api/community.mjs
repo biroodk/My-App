@@ -184,7 +184,8 @@ async function userProfileData(targetId, viewer) {
       own: false,
       user: publicProfile,
       posts: targetPosts.map(post => ({
-        id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || ''
+        id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || '',
+        commentCount: commentCounts.get(post.id) || 0
       }))
     };
   }
@@ -197,6 +198,7 @@ async function userProfileData(targetId, viewer) {
     return {
       id: item.id, postId: item.postId, text: item.text, createdAt: item.createdAt,
       postText: (post?.text || '').slice(0, 260), postAuthorName: postAuthor?.username || 'Community member',
+      postCommentCount: post ? (commentCounts.get(post.id) || 0) : 0,
       replyCount: replyCounts.get(item.id) || 0
     };
   });
@@ -208,7 +210,8 @@ async function userProfileData(targetId, viewer) {
       return {
         id: item.id, postId: comment?.postId || '', text: item.text, createdAt: item.createdAt,
         commentText: (comment?.text || '').slice(0, 260),
-        postText: (post?.text || '').slice(0, 260)
+        postText: (post?.text || '').slice(0, 260),
+        postCommentCount: post ? (commentCounts.get(post.id) || 0) : 0
       };
     });
   const likedPosts = allLikes.filter(item => item.userId === target.id)
@@ -216,7 +219,7 @@ async function userProfileData(targetId, viewer) {
     .map(item => {
       const post = postMap.get(item.postId);
       const author = post ? userMap.get(post.authorId) : null;
-      return post ? { id: post.id, text: post.text, createdAt: post.createdAt, authorName: author?.username || 'Community member' } : null;
+      return post ? { id: post.id, text: post.text, createdAt: post.createdAt, authorName: author?.username || 'Community member', commentCount: commentCounts.get(post.id) || 0 } : null;
     }).filter(Boolean);
   const ownCommentsByPost = new Map();
   for (const item of ownComments) {
@@ -230,6 +233,7 @@ async function userProfileData(targetId, viewer) {
     return {
       id: post.id, text: post.text, createdAt: post.createdAt, updatedAt: post.updatedAt || '',
       authorName: author?.username || 'Community member',
+      commentCount: commentCounts.get(post.id) || 0,
       comments: postComments.map(item => ({
         id: item.id, text: item.text, createdAt: item.createdAt, replyCount: replyCounts.get(item.id) || 0
       }))
