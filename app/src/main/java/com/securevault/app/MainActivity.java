@@ -203,6 +203,14 @@ public class MainActivity extends Activity {
     private class VaultBridge {
         @JavascriptInterface public String listFiles(String category){return MainActivity.this.listFiles(category).toString();}
         @JavascriptInterface public String listTree(){return MainActivity.this.listTree().toString();}
+        @JavascriptInterface public String getAppVersion(){
+            try {
+                android.content.pm.PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+                return info.versionName == null ? "" : info.versionName;
+            } catch (Exception ignored) {
+                return "Unknown";
+            }
+        }
         @JavascriptInterface public boolean hasPassword(){return prefs().contains("password_hash");}
         @JavascriptInterface public boolean setPassword(String p){if(p==null||p.length()<4)return false;prefs().edit().putString("password_hash",hash(p)).apply();return true;}
         @JavascriptInterface public boolean verifyPassword(String p){String h=prefs().getString("password_hash","");return !h.isEmpty()&&h.equals(hash(p));}

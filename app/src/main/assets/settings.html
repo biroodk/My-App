@@ -178,7 +178,7 @@ background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:
       </div>
 </div>
 <div class="section-title">About</div>
-<div class="card"><div class="row"><div class="icon">ℹ️</div><div class="text"><b>App Version</b></div><div style="color:#8aa0c8">V1.0 </div></div></div>
+<div class="card"><div class="row"><div class="icon">ℹ️</div><div class="text"><b>App Version</b></div><div id="appVersionValue" style="color:#8aa0c8">Loading…</div></div></div>
     <div class="credit">
      
      <div class="name">Designed by <b>AHMED K SanShania</b></div>
@@ -219,6 +219,16 @@ background:#000040;border:1px solid #0ff;border-radius:18px;width:300px;padding:
 
 <script src="vault.js"></script><script>
 if(!requireUnlock())throw new Error('locked');
+(function(){
+  const output=document.getElementById('appVersionValue');
+  if(!output)return;
+  try{
+    const version=window.AndroidVault&&typeof AndroidVault.getAppVersion==='function'
+      ?String(AndroidVault.getAppVersion()||'').trim():'';
+    output.textContent=version?'V'+version:'Unavailable';
+  }catch(e){output.textContent='Unavailable';}
+})();
+
 // Save toggle states
 document.querySelectorAll('.switch:not(#uninstallProtectionSwitch)').forEach((sw,i)=>{
   let saved=localStorage.getItem('setting_toggle_'+i);
