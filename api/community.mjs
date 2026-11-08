@@ -28,12 +28,13 @@ function passwordMatches(password, user) {
   const expected = Buffer.from(user.passwordHash || '', 'hex');
   return actual.length === expected.length && actual.length > 0 && timingSafeEqual(actual, expected);
 }
+// FL_STAFF_BADGES_20261108
 function publicUser(user) {
-  return { id: user.id, username: user.username, avatar: avatarUrl(user), role: user.role || 'user', displayNameColor: user.displayNameColor || '#e9faff', badge: user.badge || '' };
+  return { id: user.id, username: user.username, avatar: avatarUrl(user), role: user.role || 'user', displayNameColor: user.displayNameColor || '#e9faff', badge: user.badge || '', staffPermissions: staffPermissions(user), isStaff: staffPermissions(user).length > 0 };
 }
 function userRecord(username, pass, role = 'user') {
   const now = new Date().toISOString();
-  return { id: randomId(), username, usernameLower: username.toLowerCase(), passwordSalt: pass.salt, passwordHash: pass.hash, createdAt: now, lastSeenAt: now, role, displayNameColor: '#e9faff', badge: '', avatarKey: '', avatarMime: '', avatarUpdatedAt: 0 };
+  return { id: randomId(), username, usernameLower: username.toLowerCase(), passwordSalt: pass.salt, passwordHash: pass.hash, createdAt: now, lastSeenAt: now, role, displayNameColor: '#e9faff', badge: '', staffPermissions: [], avatarKey: '', avatarMime: '', avatarUpdatedAt: 0 };
 }
 async function getJSON(key) { return await DB.get(key, { type: 'json', consistency: 'strong' }); }
 async function putJSON(key, value, options = {}) { return DB.setJSON(key, value, options); }
@@ -112,6 +113,26 @@ async function authUser(request) {
   return user;
 }
 function isAdmin(user) { return user?.role === 'admin'; }
+const STAFF_FEATURE_LABELS = Object.freeze({
+  stats: 'Dashboard statistics',
+  users: 'Registered users and profiles',
+  posts: 'Post moderation',
+  comments: 'Comment moderation',
+  replies: 'View replies',
+  likes: 'View likes',
+  announcements: 'Publish and manage announcements',
+  adminNotes: 'Private admin notes',
+  recycleBin: 'Restore and permanently remove deleted posts',
+  visits: 'Website visits',
+  completedDownloads: 'Completed APK downloads and records',
+  chatMode: 'Pause and resume community chat'
+});
+function staffPermissions(user) {
+  if (!Array.isArray(user?.staffPermissions)) return [];
+  return [...new Set(user.staffPermissions.map(value => clean(value, 40)).filter(value => Object.prototype.hasOwnProperty.call(STAFF_FEATURE_LABELS, value)))];
+}
+function hasFeature(user, feature) { return isAdmin(user) || staffPermissions(user).includes(feature); }
+function canOpenStaffDashboard(user) { return isAdmin(user) || staffPermissions(user).length > 0; }
 function secureEqual(a, b) {
   const aa = Buffer.from(String(a || ''));
   const bb = Buffer.from(String(b || ''));
@@ -174,7 +195,7 @@ async function userProfileData(targetId, viewer) {
 
   const targetPosts = allPosts.filter(item => item.authorId === target.id)
     .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  const publicProfile = { id: target.id, username: target.username, avatar: avatarUrl(target) };
+  const publicProfile = { id: target.id, username: target.username, avatar: avatarUrl(target), displayNameColor: target.displayNameColor || '#e9faff', badge: target.badge || '' };
 
   if (!own) {
     // Public profile response is deliberately narrow: identity picture/name and
@@ -257,7 +278,7 @@ async function userProfileData(targetId, viewer) {
     posts, commentedPosts, comments, replies, likedPosts
   };
 }
-async function adminDashboard() {
+async function adminDashboard(actor) {
   const [users, posts, comments, replies, announcements, notes, likes, chatMode, recycleBin] = await Promise.all([
     listJSON('users/'), listJSON('posts/'), listJSON('comments/'), listJSON('replies/'),
     listJSON('announcements/'), listAdminNotes(), listJSON('likes/'), getJSON('meta/chat-paused'), listJSON('recycle-bin/posts/')
@@ -312,7 +333,37 @@ async function adminDashboard() {
       commentCount:(item.comments || []).length, replyCount:(item.replies || []).length
     }))
   };
-  return { stats: { users:users.length, posts:posts.length, comments:comments.length, replies:replies.length, likes:likes.length, announcements:announcements.length, adminNotes:notes.length, recycleBin:recycleBin.length }, recentUsers: details.users.slice(0,25), details, chatPaused: !!chatMode?.paused };
+  const full = { stats: { users:users.length, posts:posts.length, comments:comments.length, replies:replies.length, likes:likes.length, announcements:announcements.length, adminNotes:notes.length, recycleBin:recycleBin.length }, recentUsers: details.users.slice(0,25), details, chatPaused: !!chatMode?.paused };
+  if (isAdmin(actor)) {
+    full.staff = users.filter(item => staffPermissions(item).length > 0).map(item => ({
+      id: item.id, username: item.username, permissions: staffPermissions(item),
+      permissionLabels: staffPermissions(item).map(feature => STAFF_FEATURE_LABELS[feature])
+    })).sort((a,b) => a.username.localeCompare(b.username));
+    return full;
+  }
+  const allowed = new Set(staffPermissions(actor));
+  const stats = {};
+  const statFeatures = { users:'users', posts:'posts', comments:'comments', replies:'replies', likes:'likes', announcements:'announcements', adminNotes:'adminNotes', recycleBin:'recycleBin' };
+  for (const [stat, feature] of Object.entries(statFeatures)) {
+    if (allowed.has('stats') || allowed.has(feature)) stats[stat] = full.stats[stat];
+  }
+  const visible = {};
+  const detailFeatures = { users:'users', posts:'posts', comments:'comments', replies:'replies', likes:'likes', announcements:'announcements', notes:'adminNotes', recycleBin:'recycleBin' };
+  for (const [detail, feature] of Object.entries(detailFeatures)) {
+    if (allowed.has(feature)) visible[detail] = full.details[detail];
+  }
+  // User-profile inspection includes authored posts and comments but grants no moderation action by itself.
+  if (allowed.has('users')) {
+    visible.posts = full.details.posts;
+    visible.comments = full.details.comments;
+  }
+  return {
+    stats,
+    recentUsers: allowed.has('users') ? full.recentUsers : [],
+    details: visible,
+    chatPaused: allowed.has('chatMode') ? full.chatPaused : false,
+    staffPermissions: [...allowed]
+  };
 }
 async function removePostData(postId) {
   const [comments, replies, likes] = await Promise.all([listJSON('comments/'), listJSON('replies/'), listJSON(`likes/${postId}/`)]);
@@ -482,8 +533,8 @@ async function communityHandler(request) {
     }
 
     if (action === 'adminDashboard') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
-      return reply(await adminDashboard());
+      if (!canOpenStaffDashboard(user)) return reply({ error: 'Administrator or assigned staff permission required.' }, 403);
+      return reply(await adminDashboard(user));
     }
     if (action === 'createAdminAccount') {
       if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
@@ -499,14 +550,56 @@ async function communityHandler(request) {
       catch (error) { await DB.delete(`usernames/${adminName.toLowerCase()}`); throw error; }
       return reply({ ok: true, username: adminName, message: 'Administrator account created. The new admin can log in normally.' }, 201);
     }
+    if (action === 'setUserBadge') {
+      if (!isAdmin(user)) return reply({ error: 'Only administrators can assign badges to other accounts.' }, 403);
+      const targetName = clean(body.username, 24), badge = clean(body.badge, 18);
+      if (!targetName) return reply({ error: 'Enter the exact username of the account to badge.' }, 400);
+      if (!/^[A-Za-z0-9_]{3,24}$/.test(targetName)) return reply({ error: 'Enter a valid community username.' }, 400);
+      if (!/^[A-Za-z0-9 _-]{0,18}$/.test(badge)) return reply({ error: 'Badge must be 18 characters or fewer and use letters, numbers, spaces, hyphens, or underscores.' }, 400);
+      const target = await findUserByName(targetName);
+      if (!target) return reply({ error: 'That username was not found.' }, 404);
+      target.badge = badge;
+      target.badgeUpdatedAt = new Date().toISOString();
+      target.badgeUpdatedBy = user.id;
+      await putJSON(`users/${target.id}`, target);
+      return reply({ ok: true, user: publicUser(target), message: badge ? `The ${badge} badge was assigned to ${target.username}.` : `The badge was removed from ${target.username}.` });
+    }
+    if (action === 'setStaffPermissions') {
+      if (!isAdmin(user)) return reply({ error: 'Only administrators can manage staff permissions.' }, 403);
+      const targetName = clean(body.username, 24);
+      if (!targetName || !/^[A-Za-z0-9_]{3,24}$/.test(targetName)) return reply({ error: 'Enter a valid staff username.' }, 400);
+      const target = await findUserByName(targetName);
+      if (!target) return reply({ error: 'That username was not found.' }, 404);
+      if (target.role === 'admin' || target.id === user.id) return reply({ error: 'Administrator accounts cannot be changed into staff accounts.' }, 409);
+      const selected = Array.isArray(body.permissions) ? body.permissions : [];
+      const permissions = [...new Set(selected.map(value => clean(value, 40)).filter(value => Object.prototype.hasOwnProperty.call(STAFF_FEATURE_LABELS, value)))];
+      if (!permissions.length) return reply({ error: 'Select at least one staff feature. Use Remove staff access to remove all permissions.' }, 400);
+      target.staffPermissions = permissions;
+      target.staffAssignedAt = new Date().toISOString();
+      target.staffAssignedBy = user.id;
+      await putJSON(`users/${target.id}`, target);
+      return reply({ ok: true, username: target.username, permissions, permissionLabels: permissions.map(feature => STAFF_FEATURE_LABELS[feature]), message: `Staff permissions saved for ${target.username}.` });
+    }
+    if (action === 'removeStaff') {
+      if (!isAdmin(user)) return reply({ error: 'Only administrators can remove staff access.' }, 403);
+      const targetName = clean(body.username, 24);
+      if (!targetName || !/^[A-Za-z0-9_]{3,24}$/.test(targetName)) return reply({ error: 'Enter a valid staff username.' }, 400);
+      const target = await findUserByName(targetName);
+      if (!target) return reply({ error: 'That username was not found.' }, 404);
+      if (target.role === 'admin') return reply({ error: 'Administrator accounts cannot be removed as staff.' }, 409);
+      target.staffPermissions = [];
+      delete target.staffAssignedAt; delete target.staffAssignedBy;
+      await putJSON(`users/${target.id}`, target);
+      return reply({ ok: true, username: target.username, message: `Staff access removed from ${target.username}.` });
+    }
     if (action === 'setChatMode') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'chatMode')) return reply({ error: 'Chat-management permission required.' }, 403);
       if (typeof body.paused !== 'boolean') return reply({ error: 'Choose whether to pause or resume community chat.' }, 400);
       await putJSON('meta/chat-paused', { paused: body.paused, changedAt: new Date().toISOString(), changedBy: user.id });
       return reply({ ok: true, paused: body.paused });
     }
     if (action === 'createAdminNote') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'adminNotes')) return reply({ error: 'Admin-notes permission required.' }, 403);
       const title = clean(body.title, 100), rawText = clean(body.text, 4000);
       const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
       if (!title || !rawText) return reply({ error: 'A note title and note text are required.' }, 400);
@@ -515,7 +608,7 @@ async function communityHandler(request) {
       return reply({ ok: true, note }, 201);
     }
     if (action === 'editAdminNote') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'adminNotes')) return reply({ error: 'Admin-notes permission required.' }, 403);
       const id = clean(body.noteId, 80), title = clean(body.title, 100), rawText = clean(body.text, 4000);
       const text = body.htmlMode === true ? `[[FL-HTML]]${rawText}` : rawText;
       if (!title || !rawText) return reply({ error: 'A note title and note text are required.' }, 400);
@@ -526,7 +619,7 @@ async function communityHandler(request) {
       return reply({ ok: true });
     }
     if (action === 'deleteAdminNote') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'adminNotes')) return reply({ error: 'Admin-notes permission required.' }, 403);
       const id = clean(body.noteId, 80), note = await findAdminNote(id);
       if (!note) return reply({ error: 'Admin note not found.' }, 404);
       if (note._storageKey) {
@@ -578,7 +671,7 @@ async function communityHandler(request) {
       }
       if (body.badge !== undefined) {
         const badge = clean(body.badge, 18);
-        if (badge && !isAdmin(user)) return reply({ error: 'Only administrators can assign profile badges.' }, 403);
+        if (!isAdmin(user)) return reply({ error: 'Only administrators can change profile badges.' }, 403);
         if (!/^[A-Za-z0-9 _-]{0,18}$/.test(badge)) return reply({ error: 'Badge must be 18 characters or fewer.' }, 400);
         user.badge = badge;
       }
@@ -586,7 +679,7 @@ async function communityHandler(request) {
       return reply({ user: publicUser(user) });
     }
     if (action === 'createAnnouncement') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'announcements')) return reply({ error: 'Announcement-management permission required.' }, 403);
       const title = clean(body.title, 100), text = clean(body.text, 2000);
       if (!title || !text) return reply({ error: 'Announcement title and body are required.' }, 400);
       const announcement = { id: randomId(), authorId: user.id, title, body: text, createdAt: new Date().toISOString() };
@@ -594,7 +687,7 @@ async function communityHandler(request) {
       return reply({ ok: true, announcement }, 201);
     }
     if (action === 'editAnnouncement') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'announcements')) return reply({ error: 'Announcement-management permission required.' }, 403);
       const id = clean(body.announcementId, 80), title = clean(body.title, 100), text = clean(body.text, 2000);
       if (!title || !text) return reply({ error: 'Announcement title and body are required.' }, 400);
       const announcement = await getJSON(`announcements/${id}`);
@@ -604,7 +697,7 @@ async function communityHandler(request) {
       return reply({ ok: true, announcement });
     }
     if (action === 'deleteAnnouncement') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'announcements')) return reply({ error: 'Announcement-management permission required.' }, 403);
       const id = clean(body.announcementId, 80);
       if (!(await getJSON(`announcements/${id}`))) return reply({ error: 'Announcement not found.' }, 404);
       await DB.delete(`announcements/${id}`);
@@ -637,13 +730,13 @@ async function communityHandler(request) {
     if (action === 'deletePost' || action === 'adminDeletePost') {
       const postId = clean(body.postId, 80), post = await getJSON(`posts/${postId}`);
       if (!post) return reply({ error: 'Post not found.' }, 404);
-      if (action === 'adminDeletePost' && !isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (action === 'adminDeletePost' && !hasFeature(user, 'posts')) return reply({ error: 'Post-moderation permission required.' }, 403);
       if (action === 'deletePost' && post.authorId !== user.id) return reply({ error: 'Only the post owner can delete it.' }, 403);
       await softDeletePost(postId, user.id);
       return reply({ ok: true, recycleBinExpiresInSeconds: 1800 });
     }
     if (action === 'adminBulkDeletePosts') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'posts')) return reply({ error: 'Post-moderation permission required.' }, 403);
       const ids = [...new Set((Array.isArray(body.postIds) ? body.postIds : []).map(id => clean(id, 80)).filter(Boolean))].slice(0, 100);
       if (!ids.length) return reply({ error: 'Select at least one post.' }, 400);
       let deleted = 0;
@@ -651,7 +744,7 @@ async function communityHandler(request) {
       return reply({ ok: true, deleted, recycleBinExpiresInSeconds: 1800 });
     }
     if (action === 'adminRestoreTrashedPost') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'recycleBin')) return reply({ error: 'Recycle-bin permission required.' }, 403);
       const id = clean(body.postId, 80);
       let restored;
       try { restored = await restoreTrashedPost(id); }
@@ -660,14 +753,14 @@ async function communityHandler(request) {
       return reply({ ok: true });
     }
     if (action === 'adminPermanentlyDeleteTrashedPost') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'recycleBin')) return reply({ error: 'Recycle-bin permission required.' }, 403);
       const id = clean(body.postId, 80), trash = await getJSON(`recycle-bin/posts/${id}`);
       if (!trash) return reply({ error: 'Recycle-bin entry not found or already expired.' }, 404);
       await DB.delete(`recycle-bin/posts/${id}`);
       return reply({ ok: true });
     }
     if (action === 'adminBulkDeleteComments') {
-      if (!isAdmin(user)) return reply({ error: 'Administrator permission required.' }, 403);
+      if (!hasFeature(user, 'comments')) return reply({ error: 'Comment-moderation permission required.' }, 403);
       const ids = [...new Set((Array.isArray(body.commentIds) ? body.commentIds : []).map(id => clean(id, 80)).filter(Boolean))].slice(0, 100);
       if (!ids.length) return reply({ error: 'Select at least one comment.' }, 400);
       let deleted = 0;

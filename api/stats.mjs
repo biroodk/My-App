@@ -38,13 +38,13 @@ async function completedDownloadRecords(limit = 300) {
     };
   });
 }
-async function isAdmin(request) {
+// FL_STAFF_BADGES_20261108
+async function authorizedUser(request) {
   const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token || token.length > 200) return false;
+  if (!token || token.length > 200) return null;
   const session = await community.get(`sessions/${digest(token)}`, { type: 'json', consistency: 'strong' });
-  if (!session || Number(session.expiresAt || 0) <= Date.now()) return false;
-  const user = await community.get(`users/${session.userId}`, { type: 'json', consistency: 'strong' });
-  return user?.role === 'admin';
+  if (!session || Number(session.expiresAt || 0) <= Date.now()) return null;
+  return await community.get(`users/${session.userId}`, { type: 'json', consistency: 'strong' });
 }
 async function statsHandler(request) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
@@ -57,9 +57,17 @@ async function statsHandler(request) {
     }
     if (request.method !== 'GET') return json({ error: 'Method not allowed.' }, 405);
     if (url.searchParams.get('admin') === '1') {
-      if (!(await isAdmin(request))) return json({ error: 'Administrator permission required.' }, 403);
-      const totals = await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 };
-      const [completedDownloads, downloadRecords] = await Promise.all([completedCount(), completedDownloadRecords(300)]);
+      const account = await authorizedUser(request);
+      const permissions = new Set(Array.isArray(account?.staffPermissions) ? account.staffPermissions : []);
+      const systemAdmin = account?.role === 'admin';
+      const canReadStats = systemAdmin || permissions.has('stats');
+      const canReadVisits = canReadStats || permissions.has('visits');
+      const canReadDownloads = canReadStats || permissions.has('completedDownloads');
+      const canReadDownloadRecords = systemAdmin || permissions.has('completedDownloads');
+      if (!canReadVisits && !canReadDownloads) return json({ error: 'Administrator or assigned staff permission required.' }, 403);
+      const totals = canReadVisits ? (await stats.get('totals', { type: 'json', consistency: 'strong' }) || { visits: 0 }) : { visits: 0 };
+      const completedDownloads = canReadDownloads ? await completedCount() : 0;
+      const downloadRecords = canReadDownloadRecords ? await completedDownloadRecords(300) : [];
       return json({ visits: Number(totals.visits || 0), completedDownloads, downloadRecords, downloadRecordsLimit: 300 });
     }
     const visitorId = (url.searchParams.get('visitorId') || '').slice(0, 120);
